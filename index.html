@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>ortak alan</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .menu-container, .quiz-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .menu-btn.locked {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      cursor: not-allowed;
+      order: 999;
+      opacity: 0.85;
+    }
+
+    .wrong-menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #dc3545, #a71d2a);
+      color: white;
+      order: 9999;
+      animation: wrongBlink 10s infinite;
+    }
+
+    @keyframes wrongBlink {
+      0%, 45% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+      50% {
+        opacity: 0.35;
+        transform: scale(1.02);
+        box-shadow: 0 0 18px rgba(220,53,69,0.45);
+      }
+      55%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+    }
+
+    .quiz-container {
+      display: none;
+      position: relative;
+      padding-top: 85px;
+      min-height: 100vh;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: #28a745;
+      transition: 0.3s;
+      width: 0%;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .main-menu-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: calc(1rem + 4pt);
+      color: #333;
+      padding: 5px 0;
+    }
+
+    .header-info {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-right: 110px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .header-subject {
+      font-weight: normal;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .retry-badge {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffe69c;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .question-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      background: #f8f9fa;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #d4edda !important;
+      border-color: #28a745 !important;
+      color: #155724 !important;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #f8d7da !important;
+      border-color: #dc3545 !important;
+      color: #721c24 !important;
+      font-weight: bold;
+    }
+
+    .tick {
+      display: inline-block;
+      margin-left: 10px;
+      color: #1f9d45;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .tick.show {
+      animation: popTick 0.45s ease forwards;
+    }
+
+    @keyframes popTick {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .explanation {
+      display: none;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eaf2f8;
+      border-left: 5px solid #2980b9;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .next-btn { background: #007bff; }
+    .prev-btn {
+      background: #e9ecef;
+      color: #dc3545 !important;
+      border: 1px solid #ddd;
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-weight: bold;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .disclaimer-title {
+      display: block;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .source-tag {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #777;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
+    .reset-set-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #ffc107;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-container {
+        padding-top: 110px;
+      }
+
+      .header-info {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding-right: 104px;
+        align-items: flex-start;
+      }
+
+      .header-left {
+        display: block;
+        padding-right: 6px;
+      }
+
+      .main-menu-btn {
+        display: block;
+        font-size: 0.95rem;
+        padding: 0;
+        margin-bottom: 6px;
+      }
+
+      .header-subject {
+        display: block;
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 100%;
+      }
+
+      .question-title {
+        font-size: 1.05rem;
+      }
+
+      .option-btn {
+        font-size: 1rem;
+        padding: 14px;
+      }
+
+      .reset-set-btn {
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        padding: 7px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="menuContainer" class="menu-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;">
+      <h1 id="mainTitle" style="margin:0;">ortak alan</h1>
+      <button onclick="clearAllStatistics()" style="background:#dc3545; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Verileri Sıfırla
+      </button>
+<button onclick="shuffleAllQuestions()" style="background:#28a745;color:white;border:none;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:0.75rem;">Soruları Karıştır</button>
+
+    </div>
+
+    <div id="menuGrid" class="menu-grid"></div>
+
+    <div class="disclaimer-box">
+      <span class="disclaimer-title">⚠️ Önemli Uyarı</span>
+      Bu sistemde yer alan içerikler yalnızca eğitim amaçlıdır. İçeriklerin kullanımından doğabilecek doğrudan veya dolaylı hiçbir sorumluluk kabul edilmez. Tüm kullanım sorumluluğu kullanıcıya aittir.
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="header-info">
+      <div class="header-left">
+        <button onclick="showMenu()" class="main-menu-btn">☰ Ana Menü</button>
+        <span id="headerSubject" class="header-subject"></span>
+      </div>
+    </div>
+
+    <button onclick="resetCurrentSet()" class="reset-set-btn">Seti Sıfırla</button>
+
+    <div id="retryBadge" class="retry-badge">Yalnış cevaplanan soru</div>
+    <h2 id="questionText" class="question-title">...</h2>
+
+    <div id="optionsArea"></div>
+
+    <div class="quiz-footer">
+      <div id="footerLeft">Kalan: 0</div>
+      <div id="footerRight">0 / 0</div>
+    </div>
+
+    <div id="explanationArea" class="explanation"></div>
+
+    <div class="nav-controls">
+      <button id="prevBtn" class="nav-btn prev-btn" onclick="goBack()" style="visibility:hidden;">❮ Önceki</button>
+      <button id="nextBtn" class="nav-btn next-btn" onclick="goForward()" style="visibility:hidden;">Yeni Soru ❯</button>
+    </div>
+  </div>
+</div>
+
+<div class="source-tag" id="sourceTag">Kaynak: yapayzeka/ balik_besleme_ve_yem_teknolojisi_versiyon_1</div>
+
+<script>
+  const BASE_SUBJECT = "ortak alan";
+  const VERSION_NUMBER = 6;
+
+  function buildVersionName(base, version) {
+    return `${base} Versiyon ${version}`;
+  }
+
+  function buildVersionSlug(base, version) {
+    return `${base.toLowerCase().replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}_versiyon_${version}`;
+  }
+
+  const CURRENT_SUBJECT = BASE_SUBJECT;
+  const VERSION_SLUG = buildVersionSlug(BASE_SUBJECT, VERSION_NUMBER);
+  const SOURCE_TEXT = `Kaynak: 2_versiyon_soru_havuzu_versiyon_3`;
+  const QUESTIONS_PER_SET = 30;
+
+  const questions = [
+{q:"Türkiye Cumhuriyeti'nin nitelikleri arasında aşağıdakilerden hangisi yer almaz?",o:["Toplumun huzuru ve adalet anlayışı içinde olma", "Başlangıçta belirtilen temel ilkelere dayanma", "Otoriter bir devlet yapısına sahip olma", "Demokratik, laik ve sosyal bir hukuk devleti olma"],c:2,e:""},
+{q:"Cumhuriyetin temel niteliklerini akılda tutmak için kullanılan \"SALİH\" kısaltmasında yer alan \"A\" harfi neyi ifade eder?",o:["Adalet anlayışını", "Atatürk milliyetçiliğine bağlılığı", "Anayasal eşitliği", "Aile bütünlüğünü"],c:1,e:""},
+{q:"Anayasa'da yer alan devletin bütünlüğü, dili, bayrağı, milli marşı ve başkentiyle ilgili düzenlemelerden yola çıkarak aşağıdakilerden hangisi yanlıştır?",o:["Dili Türkçedir.", "Türkiye Devleti ülkesi ve milletiyle bölünmez bir bütündür.", "Başkenti İstanbul'dur.", "Milli marşı İstiklal Marşı'dır."],c:2,e:""},
+{q:"1982 Anayasası'na göre egemenliğin kaynağı aşağıdakilerden hangisidir?",o:["Meclis Başkanı", "Cumhurbaşkanı", "Kanunlar", "Millet"],c:3,e:""},
+{q:"Türk Milleti adına yasama yetkisini kullanma görevi kime verilmiştir?",o:["Anayasa Mahkemesi'ne", "Türkiye Büyük Millet Meclisi'ne", "Cumhurbaşkanlığı'na", "Yüksek Seçim Kurulu'ne"],c:1,e:""},
+{q:"Yürütme yetkisi ve görevini Anayasa'ya ve kanunlara uygun olarak yerine getiren merci neresidir?",o:["Bakanlar Kurulu", "Türkiye Büyük Millet Meclisi", "Cumhurbaşkanı", "Danıştay"],c:2,e:""},
+{q:"Yargı yetkisinin kullanılmasıyla ilgili mahkemelerin sahip olması gereken iki temel nitelik aşağıdakilerden hangisinde doğru verilmiştir?",o:["Hızlı ve şeffaf olma", "Bağımsız ve tarafsız olma", "Adil ve esnek olma", "Seçilmiş ve sorumlu olma"],c:1,e:""},
+{q:"Aşağıdakilerden hangisi Anayasa'da belirtilen \"kanun önünde eşitlik\" ilkesinin gereğidir?",o:["İnsanlara siyasi düşüncelerine göre ayrıcalık tanınması", "Dil, ırk, renk, cinsiyet, din ve mezhep ayrımı gözetilmemesi", "Devletin dini inançlara göre ayrı yargılama yapabilmesi", "Sadece belirli sınıfların ayrıcalıklara sahip olması"],c:1,e:""},
+{q:"Temel hak ve hürriyetlerin sınırlanması ile ilgili temel şart nedir?",o:["Özlerine dokunulmadan sadece Cumhurbaşkanı kararnamesi ile sınırlanabilir.", "Özlerine dokunulmaksızın sadece Anayasada belirtilen sebeplere bağlı olarak ve kanunla sınırlanabilir.", "Tüm haklar hiçbir şarta bağlı olmaksızın yargı kararıyla kısıtlanabilir.", "Sınırlamalar yerel mahkeme kararlarına dayandırılmalıdır."],c:1,e:""},
+{q:"Temel hak ve hürriyetlere getirilecek bir sınırlama aşağıdakilerden hangisine aykırı olabilir?",o:["Ölçülülük ilkesine", "Lâik Cumhuriyetin gereklerine", "Demokratik toplum düzeninin gereklerine", "İdari düzenlemelerin teamüllerine"],c:3,e:""},
+{q:"Aşağıdaki durumlardan hangisinde temel hak ve hürriyetler sınırlandırılabilecek istisnai durumlardan biri olarak sayılmamıştır?",o:["Savaş", "Ekonomik kriz", "Seferberlik", "Olağanüstü Hâl (OHAL)"],c:1,e:""},
+{q:"Yabancıların temel hak ve hürriyetlerinin sınırlandırılması işleminde aşağıdakilerden hangisi gözetilmek zorundadır?",o:["Milletlerarası hukuka uygunluk", "Sadece içtihatlar", "Yönetmelikler", "Kültürel normlar"],c:0,e:""},
+{q:"1982 Anayasası'na göre \" çalışma\"nın niteliği aşağıdakilerden hangisidir?",o:["Sadece bir haktır.", "Sadece devlete karşı bir ödevdir.", "Hem bir hak hem de bir ödevdir.", "Çalışma tamamen bir imtiyazdır."],c:2,e:""},
+{q:"1982 Anayasası'nda aşağıdaki hürriyetlerden hangisi için özel bir sınırlama sebebi öngörülmemiştir?",o:["İfade hürriyeti", "Seyahat hürriyeti", "Yerleşme hürriyeti", "Çalışma hürriyeti"],c:3,e:""},
+{q:"1982 Anayasası'na göre aşağıdakilerden hangisi \"Yerleşme Hürriyeti\"nin sınırlandırılma sebeplerinden biri değildir?",o:["Kamu mallarını korumak", "Sağlıklı kentleşmeyi gerçekleştirmek", "Sosyal ve ekonomik gelişmeyi sağlamak", "Suç soruşturması ve kovuşturması yapmak"],c:3,e:""},
+{q:"Tabloya göre, \"Seyahat Hürriyeti\" aşağıda verilen hangi gerekçe ile sınırlandırılamaz?",o:["Suç soruşturması yürütmek", "Suç kovuşturması yapmak", "Suç işlenmesini önlemek", "Sağlıklı kentleşmeyi gerçekleştirmek"],c:3,e:""},
+{q:"Anayasamıza göre seçimler ve halk oylamasının yapılış şekliyle ilgili aşağıdaki ilkelerden hangisi yanlıştır?",o:["Gizli oy ilkesi uygulanır.", "Çift dereceli seçim sistemi esastır.", "Açık sayım ve döküm ilkesine dayanır.", "Yargı yönetimi ve denetimi altında yapılır."],c:1,e:""},
+{q:"Seçimlerde oy kullanabilmek için gereken yasal yaş şartı metne göre aşağıdakilerden hangisidir?",o:["18 yaşından gün almış olmak", "18 yaşını doldurmuş olmak", "19 yaşından gün almış olmak", "21 yaşını doldurmuş olmak"],c:1,e:""},
+{q:"Türkiye'de milletvekili seçilebilme yeterliliği için aranan yaş şartı aşağıdakilerden hangisinde doğru verilmiştir?",o:["18 yaşını doldurmuş olmak", "25 yaşını doldurmuş olmak", "30 yaşını doldurmuş olmak", "35 yaşını doldurmuş olmak"],c:0,e:""},
+{q:"Onsekiz yaşını dolduran her Türk vatandaşının anayasal olarak sahip olduğu haklar metinde nasıl gruplandırılmıştır?",o:["Sadece seçme hakkı", "Sadece halkoylamasına katılma hakkı", "Seçme ve halkoylamasına katılma hakları", "Siyasi parti kurma hakkı"],c:2,e:""},
+{q:"Siyasi partilere üye olabilmek için kişinin tamamlaması gereken asgari yaş sınırı kaçtır?",o:["18", "20", "21", "25"],c:0,e:""},
+{q:"Aşağıdaki gruplardan hangisi anayasal düzenlemelere göre seçimlerde oy kullanma hakkına sahip değildir?",o:["Kamu kurumlarında çalışan siviller", "Silah altında bulunan er ve erbaşlar", "Sendika üyeleri", "Yurt dışında yaşayan vatandaşlar"],c:1,e:""},
+{q:"Metne göre, ceza infaz kurumlarında bulunan hangi statüdeki kişiler oy kullanma hakkından yoksundur?",o:["Sadece tutuklular", "Cezaevinde bulunan hükümlüler", "Cezaevi görevlileri", "Tutuksuz yargılananlar"],c:1,e:""},
+{q:"1982 Anayasası'na göre Türkiye'de yapılan seçimlerde aşağıdakilerden hangisinin oy kullanma hakkı kesinlikle yoktur?",o:["Yurt dışında yaşayan Türk vatandaşları", "Türkiye Cumhuriyeti vatandaşı olmayanlar", "Tutuklu statüsünde olanlar", "Çifte vatandaşlığa sahip olanlar"],c:1,e:""},
+{q:"Siyasi partilere üyelik şartlarıyla ilgili aşağıdakilerden hangisi doğrudur?",o:["Memur statüsündeki görevliler siyasi partilere üye olabilirler.", "İşçiler siyasi partilere üye olamazlar.", "Memur statüsündeki görevliler siyasi partilere üye olamazlar.", "Sadece üst düzey memurlar siyasi partilere üye olabilirler."],c:2,e:""},
+{q:"1982 Anayasası'na göre \"Mal Bildirimi\" temel hak ve ödevlerin hangi bölümünde yer alır?",o:["Kişinin Hakları ve Ödevleri", "Sosyal ve Ekonomik Haklar", "Siyasi Haklar ve Ödevler", "Kültürel Haklar"],c:2,e:""},
+{q:"1982 Anayasası'na göre, aşağıdaki haklardan hangisinin kullanımı kanunla önceden izin alma şartına bağlanabilir?",o:["Düşünceyi açıklama hürriyeti", "Dernek kurma hürriyeti", "Radyo, televizyon ve sinema yollarıyla yayım yapma hakkı", "Toplantı ve gösteri yürüyüşü düzenleme hakkı"],c:2,e:""},
+{q:"Anayasa'nın 10. maddesine \"Kadınlar ve erkekler eşit haklara sahiptir. Devlet, bu eşitliğin yaşama geçmesini sağlamakla yükümlüdür.\" ibaresi hangi yıl yapılan anayasa değişikliği ile eklenmiştir?",o:["2001", "2004", "2010", "2017"],c:1,e:""},
+{q:"Derneklerin faaliyetten men edilmesi süreciyle ilgili belgede yer alan kural aşağıdakilerden hangisidir?",o:["Dernekler hiçbir şartta faaliyetten men edilemez.", "Yalnızca Anayasa Mahkemesi dernekleri men edebilir.", "Kamu düzeninin gerektirdiği hâllerde gecikmede sakınca varsa, kanunla yetkilendirilen bir merci tarafından faaliyetten men edilebilir.", "Men kararı sadece Cumhurbaşkanı kararnamesiyle alınır."],c:2,e:""},
+{q:"Sendika kurma hakkıyla ilgili olarak aşağıdakilerden hangisi yanlıştır?",o:["Kurmak için önceden izin alma şartı yoktur.", "Ancak kanunla sınırlandırılabilir.", "Sınırlandırma sebepleri arasında \"Milli Güvenlik\" bulunur.", "Yalnızca idari bir kararla sınırlandırılması mümkündür."],c:3,e:""},
+{q:"TBMM üyeliklerinde herhangi bir sebeple boşalma olması durumunda sadece o boş üyelikleri doldurmak amacıyla yapılan seçime ne ad verilir?",o:["Genel Seçim", "Erken Seçim", "Ara Seçim", "Kısmi Seçim"],c:2,e:""},
+{q:"Anayasa'ya göre, ara seçim kural olarak her seçim döneminde en fazla kaç kez yapılabilir?",o:["1 defa", "2 defa", "3 defa", "Sınır yoktur"],c:0,e:""},
+{q:"Olağan şartlarda bir ara seçime gidilebilmesi için, son genel seçimin üzerinden en az ne kadar süre geçmiş olması zorunludur?",o:["12 ay", "24 ay", "30 ay", "36 ay"],c:2,e:""},
+{q:"TBMM'de boşalan üyeliklerin sayısı üye tam sayısının yüzde kaçını bulduğunda, 3 ay içinde ara seçime gidilmesi zorunludur?",o:["%3", "%5", "%7", "%10"],c:1,e:""},
+{q:"Ara seçimlerle ilgili aşağıdaki süre kısıtlamalarından hangisi doğrudur?",o:["Genel seçimlere 6 ay kala ara seçim yapılamaz.", "Genel seçimlere 1 yıl kala ara seçim yapılamaz.", "Genel seçimlere 2 yıl kala ara seçim yapılamaz.", "Son 3 ay kala ara seçim yapılamaz."],c:1,e:""},
+{q:"Bir ilin veya seçim çevresinin TBMM'de hiç üyesinin kalmaması (tüm milletvekilliklerinin boşalması) durumunda ara seçim ne zaman yapılır?",o:["Boşalmayı takip eden 60. gün", "Boşalmayı takip eden 90 günden sonraki ilk Pazar günü", "1 yıl sonraki ilk Pazar günü", "Bir sonraki genel seçim beklenir"],c:1,e:""},
+{q:"Yasama organının, başka bir işlemle yetki verilmesine gerek kalmadan, Anayasa'dan aldığı yetkiyle bir konuyu ilk elden düzenleyebilmesi, belgedeki tanıma göre hangi ilkeyle ifade edilmiştir?",o:["Yasamanın genelliği", "Yasamanın devredilmezliği", "Yasama ilkesinin genişliği", "Yasama sorumsuzluğu"],c:2,e:""},
+{q:"TBMM Başkanlık Divanı'nda aşağıdakilerden hangisi görev almaz?",o:["Meclis Başkanı", "İdare Amirleri", "Parti Grup Başkanvekilleri", "Kâtip Üyeler"],c:2,e:""},
+{q:"1982 Anayasası'na göre, bir kanunun şekil bakımından Anayasa'ya aykırılığı iddiasıyla Anayasa Mahkemesinde açılacak iptal davasının süresi ne kadardır?",o:["Resmî Gazete'de yayımlanmasından itibaren 10 gün", "Resmî Gazete'de yayımlanmasından itibaren 30 gün", "Resmî Gazete'de yayımlanmasından itibaren 60 gün", "Resmî Gazete'de yayımlanmasından itibaren 90 gün"],c:0,e:""},
+{q:"TBMM'de üye tam sayısının en az üçte ikisi (2/3) tarafından kabul edilen bir Anayasa değişikliğinin halkoylamasına (referanduma) sunulması durumu aşağıdakilerden hangisine bağlıdır?",o:["Zorunlu olarak halkoyuna sunulur.", "Cumhurbaşkanının takdirine bağlıdır.", "Anayasa Mahkemesi'nin onayına bağlıdır.", "Yüksek Seçim Kurulu'nun kararına bağlıdır."],c:1,e:""},
+{q:"1982 Anayasası'na göre idare hukukunda yer alan \"yetki genişliği\" ilkesi hangi idari birime tanınmıştır?",o:["Belediye İdaresine", "Köy İdaresine", "İl İdaresine", "Bölge İdaresine"],c:2,e:""},
+{q:"Milletvekilliğiyle bağdaşmayan bir görevi sürdürmekte ısrar eden milletvekilinin üyeliğinin düşürülmesine aşağıdakilerden hangisi karar verir?",o:["Anayasa Mahkemesi", "Yüksek Seçim Kurulu", "Cumhurbaşkanı", "TBMM Genel Kurulu (Gizli oyla)"],c:3,e:""},
+{q:"Kamulaştırma bedelinin taksitlendirilmesi durumunda, kanunun öngördüğü azami taksitlendirme süresi kaç yılı aşamaz?",o:["3 yıl", "5 yıl", "10 yıl", "15 yıl"],c:1,e:""},
+{q:"TBMM, yürürlükte olan bir olağanüstü hâl (OHAL) uygulamasının süresini, her defasında en fazla ne kadar süreyle uzatabilir?",o:["2 ay", "3 ay", "4 ay", "6 ay"],c:2,e:""},
+{q:"Anayasa Mahkemesi, önüne gelen bir Anayasa değişikliğinin iptaline karar verebilmek için asgari hangi oy çoğunluğunu sağlamak zorundadır?",o:["Üye tam sayısının salt çoğunluğu", "Üye tam sayısının beşte üç (3/5) çoğunluğu", "Üye tam sayısının üçte iki (2/3) çoğunluğu", "Oy birliği"],c:1,e:""},
+{q:"Anayasa Mahkemesi, hakkında iptal kararı verdiği bir kanunun iptal hükmünün yürürlüğe girmesini en fazla ne kadar süreyle erteleyebilir?",o:["3 ay", "6 ay", "1 yıl", "2 yıl"],c:2,e:""},
+{q:"Bir kanunun esas bakımından Anayasa'ya aykırılığı sebebiyle açılacak iptal davası süresi ne kadardır?",o:["10 gün", "30 gün", "60 gün", "90 gün"],c:2,e:""},
+{q:"İdare sistemimizde taşra teşkilatında merkeze danışmadan karar alabilmeyi ifade eden \"yetki genişliği\" ilkesi hangi idari amire tanınmıştır?",o:["Kaymakam", "Vali", "Belediye Başkanı", "Emniyet Müdürü"],c:1,e:""},
+{q:"1982 Anayasası'na göre, bakanlıkların kurulması, kaldırılması, görev ve yetkilerinin düzenlenmesi hangi hukuki işlemle gerçekleştirilir?",o:["TBMM İçtüzüğü", "Kanun", "Yönetmelik", "Cumhurbaşkanlığı Kararnamesi"],c:3,e:""},
+{q:"Cumhurbaşkanı, gerekli şartlar oluştuğunda TBMM seçimlerinin yenilenmesine karar vermeden önce kime/hangi makama danışabilir?",o:["Anayasa Mahkemesi Başkanı'na", "Yüksek Seçim Kurulu'na", "TBMM Başkanı'na", "Adalet Bakanı'na"],c:2,e:""},
+{q:"Cumhurbaşkanının iade ettiği genel af ilanına ilişkin bir kanunun, TBMM tarafından aynen kabul edilebilmesi için hangi çoğunluk gereklidir?",o:["Salt çoğunluk", "Üye tam sayısının beşte üç (3/5) çoğunluğu", "Üye tam sayısının üçte iki (2/3) çoğunluğu", "Üye tam sayısının dörtte üç çoğunluğu"],c:1,e:""},
+{q:"Beyan ve eylemleriyle üyesi olduğu siyasi partinin temelli kapatılmasına sebep olan bir milletvekilinin üyeliği, hukuken hangi anda düşmüş kabul edilir?",o:["TBMM Genel Kurulu karar verdiğinde", "Meclis Başkanı tebliğ ettiğinde", "Anayasa Mahkemesi kararı Resmî Gazete'de yayımlandığında", "Yüksek Seçim Kurulu düşme kararı verdiğinde"],c:2,e:""},
+{q:"Ülkenin ani bir silahlı saldırıya uğraması ve TBMM'nin tatilde olması sebebiyle acilen silahlı kuvvet kullanılmasına karar verme yetkisi kime aittir?",o:["Genelkurmay Başkanı", "Milli Savunma Bakanı", "TBMM Başkanı", "Cumhurbaşkanı"],c:3,e:""},
+{q:"1982 Anayasası'na göre TBMM, seçimlerin geriye bırakılmasına (ertelenmesine) yalnızca hangi sebeple karar verebilir?",o:["Ekonomik Kriz", "Doğal Afet", "Savaş", "Olağanüstü Hâl"],c:2,e:""},
+{q:"1982 Anayasası'na göre aşağıdakilerden hangisi hem olağanüstü hâl hem de sıkıyönetim ilanı için ortak bir nedendir?",o:["Savaş hâli", "Yaygın şiddet hareketleri", "Tabii afet", "Ağır ekonomik bunalım"],c:1,e:""},
+{q:"Yargıtay Cumhuriyet Başsavcısı, Yargıtay Genel Kurulunun belirleyeceği adaylar arasından kim tarafından seçilir?",o:["Yargıtay Birinci Başkanı", "Adalet Bakanı", "Hâkimler ve Savcılar Kurulu", "Cumhurbaşkanı"],c:3,e:""},
+{q:"Milletvekili genel seçimlerinde birden çok çevreye ayrılacak illerdeki seçim çevrelerinin sınırlarını belirleme yetkisi hangi kuruma aittir?",o:["TBMM Başkanlığı", "Yüksek Seçim Kurulu", "İçişleri Bakanlığı", "Anayasa Mahkemesi"],c:1,e:""},
+{q:"Siyasi partisinin temelli kapatılmasına beyan ve eylemleriyle sebep olan bir üye, ne kadar süreyle başka bir partinin kurucusu, üyesi veya yöneticisi olamaz?",o:["1 yıl", "3 yıl", "5 yıl", "Ömür boyu"],c:2,e:""},
+{q:"Bir kanuna karşı Anayasa Mahkemesinde iptal davası açabilmek için TBMM üye tam sayısının en az ne kadarı tutarında milletvekilinin başvurusu gerekir?",o:["Onda biri (1/10)", "Beşte biri (1/5)", "Dörtte biri (1/4)", "Üçte biri (1/3)"],c:1,e:""},
+{q:"TBMM tatildeyken veya ara vermedeyken meclisi toplantıya çağırma yetkisi kime aittir?",o:["Meclis Başkanı", "Cumhurbaşkanı Yardımcısı", "Anayasa Mahkemesi Başkanı", "Adalet Bakanı"],c:0,e:""},
+{q:"TBMM'nin \"belli bir konuda bilgi edinmek için yaptığı incelemeden\" ibaret olan denetim yolu aşağıdakilerden hangisidir?",o:["Meclis Soruşturması", "Yazılı Soru", "Meclis Araştırması", "Genel Görüşme"],c:2,e:""},
+{q:"Toplumu ve Devlet faaliyetlerini ilgilendiren belli bir konunun TBMM Genel Kurulunda görüşülmesi şeklinde uygulanan denetim yolu nedir?",o:["Gensoru", "Genel Görüşme", "Meclis Soruşturması", "Güvenoyu"],c:1,e:""},
+{q:"TBMM'nin \"Meclis Soruşturması\" denetim yolu kimler hakkında uygulanabilir?",o:["Sadece Cumhurbaşkanı", "Milletvekilleri ve Belediye Başkanları", "Cumhurbaşkanı yardımcıları ve bakanlar", "Yüksek yargı organı üyeleri"],c:2,e:""},
+{q:"Milletvekillerinin yönelttiği \"Yazılı Soru\" önergesinin muhatabı tarafından en geç kaç gün içinde cevaplanması gerekir?",o:["7 gün", "10 gün", "15 gün", "30 gün"],c:2,e:""},
+{q:"Meclisteki düşünceleri dışarıda tekrarlamaktan sorumlu tutulamama durumu belgede hangi hukuki kavramla ilişkilendirilmiştir?",o:["Yasama sorumsuzluğu", "Yasama dokunulmazlığı", "Siyasi bağışıklık", "Kürsü masuniyeti"],c:1,e:""},
+{q:"TBMM üyelerinin meclis çalışmalarındaki salt oy ve sözlerinden dolayı hiçbir şekilde sorumlu tutulmamalarına genel olarak ne ad verilir?",o:["Yasama dokunulmazlığı", "Yasama yetkisi", "Yasama sorumsuzluğu", "Siyasi hürriyet"],c:2,e:""},
+{q:"Bir yasama döneminde TBMM Başkanlık Divanı için toplamda kaç defa seçim yapılır?",o:["Bir", "İki", "Üç", "Dört"],c:1,e:""},
+{q:"TBMM'nin çalıştığı bir dönem (olağan çalışma süreci) metinde hangi adla anılmaktadır?",o:["Seçim dönemi", "Yasama dönemi", "Yasama yılı dönemi", "Meclis takvimi"],c:2,e:""},
+{q:"TBMM'de yapılan oylamalarda meclis üye tam sayısının salt çoğunluğu arandığında, karar alınabilmesi için \"asgari\" kaç milletvekilinin olumlu oyu gerekmektedir?",o:["151", "276", "301", "360"],c:2,e:""},
+{q:"1982 Anayasası'na göre Türkiye Büyük Millet Meclisi'nin olağan veya olağanüstü bir birleşime başlayabilmesi için Genel Kurul'da fiziken bulunması gereken milletvekili sayısı (Toplantı Yeter Sayısı) en az kaçtır?",o:["151", "200", "301", "400"],c:1,e:""},
+{q:"TBMM Genel Kurulu'nda kural olarak toplantıya katılanların salt çoğunluğu ile karar verilir. Ancak Anayasa'ya göre bu \"karar yeter sayısı\"nın düşebileceği bir alt sınır vardır. Bu alt sınır aşağıdakilerden hangisidir?",o:["100", "139", "151", "200"],c:2,e:""},
+{q:"TBMM'nin anayasayı değiştirebilmesi için meclisten geçmesi gereken teklifin \"kabulü\" esnasında aranacak olan nitelikli çoğunluk (asgari oy sayısı) kaçtır?",o:["301", "330", "360", "400"],c:3,e:""},
+{q:"Cumhurbaşkanı, cumhurbaşkanı yardımcıları veya bakanlar hakkında cezai sorumluluk doğuracak bir kararla Yüce Divan'a sevk işlemi yapılabilmesi için mecliste en az kaç milletvekilinin kabul oyu gerekir?",o:["301", "360", "400", "450"],c:2,e:""},
+{q:"Türkiye Büyük Millet Meclisi'nin görev süresi dolmadan kendi iradesiyle erken seçim kararı alabilmesi için gereken asgari nitelikli çoğunluk kaçtır?",o:["Salt çoğunluk (301)", "Beşte üç çoğunluk (360)", "Üçte iki çoğunluk (400)", "Toplantıya katılanların salt çoğunluğu"],c:1,e:""},
+{q:"Türkiye'de demokratik seçim sürecinde; oy verme öncesinden itirazların karara bağlanmasına kadar tüm aşamalarda, seçimlerin yönetimini ve yargısal denetimini üstlenen en üst merci aşağıdakilerden hangisidir?",o:["Anayasa Mahkemesi", "Yüksek Seçim Kurulu", "TBMM Başkanlığı Divanı", "İçişleri Bakanlığı"],c:1,e:""},
+{q:"Milletvekilliği görevinden kendi isteğiyle ayrılmak (istifa etmek) isteyen bir vekilin durumu anayasal olarak nasıl kesinlik kazanır?",o:["Meclis Başkanlığına dilekçe sunduğu an vekilliği düşer.", "Partisinden onay aldığında geçerli olur.", "İstifasının geçerli olduğuna TBMM Genel Kurulu karar verdiğinde vekilliği sona erer.", "Yüksek Seçim Kurulu onayladığı zaman geçerli olur."],c:2,e:""},
+{q:"Yasama organının komisyon kurma, genel kurul görüşmeleri yürütme ve oylama yapma gibi meclis içi tüm usul kuralları hangi hukuki zemin üzerinden işlemektedir?",o:["Cumhurbaşkanlığı Kararnameleri", "Kanun Hükmünde Kararnameler", "Yargıtay İçtihatları", "Kendi yaptığı İçtüzük"],c:3,e:""},
+{q:"Cumhurbaşkanının istifa, ölüm veya hastalık gibi kalıcı bir sebeple görevinden tamamen ayrılması (makamın boşalması) durumunda yeni Cumhurbaşkanı seçiminin en geç ne kadar süre içinde yapılması zorunludur?",o:["30 gün", "45 gün", "60 gün", "90 gün"],c:1,e:""},
+{q:"Cumhurbaşkanının yurt dışı gezisi veya yataklı tedavi gerektiren bir hastalık nedeniyle makamından \"geçici süreyle\" ayrıldığı durumlarda yürütme yetkisini kim üstlenir?",o:["TBMM Başkanı", "En yaşlı Bakan", "Anayasa Mahkemesi Başkanı", "Cumhurbaşkanı yardımcısı"],c:3,e:""},
+{q:"Yeni bir kabine kurulurken Cumhurbaşkanı tarafından atanacak olan Cumhurbaşkanı yardımcıları ve bakanlarda aranması gereken zorunlu hukuki koşul nedir?",o:["Parlamentodan seçilmiş bir milletvekili olmaları", "Milletvekili seçilme yeterliliğine sahip olmaları", "Daha önce devlet kademelerinde görev yapmış olmaları", "Herhangi bir siyasi parti yöneticisi olmaları"],c:1,e:""},
+{q:"Doğrudan Cumhurbaşkanlığına bağlı olarak idarenin hukuka uygunluğunu denetleyen Devlet Denetleme Kurulu'nun (DDK) Başkanını ve Kurul üyelerini kim görevlendirir?",o:["TBMM", "İçişleri Bakanı", "Cumhurbaşkanı", "Yüksek İdare Mahkemesi"],c:2,e:""},
+{q:"Devlet Denetleme Kurulu'nun kurumsal yapısı, işleyiş esasları ve üyelerinin özlük hakları aşağıdaki hukuki metinlerden hangisiyle düzenleme altına alınmıştır?",o:["Anayasa Mahkemesi Kararı", "Teşkilat Kanunu", "Yönetmelik", "Cumhurbaşkanlığı Kararnamesi"],c:3,e:""},
+{q:"TBMM ve Cumhurbaşkanlığı makamının her ikisi için birden erken seçim/yenileme kararı alınması halinde, görev başındaki Meclis'in ve Cumhurbaşkanı'nın hukuki statüleri ne zaman sona erer?",o:["Yenileme kararının Resmî Gazete'de yayımlandığı gün", "Seçimlerin yapıldığı oy verme günü akşamında", "YSK'nın seçim sonuçlarını kesin ilan ettiği an", "Yeni Meclisin ve Cumhurbaşkanının göreve başlamasına kadar"],c:3,e:""},
+{q:"SPK Hap Bilgiler kitapçığında (sayfa 6'da) yer alan bilgiye göre, Cumhurbaşkanı'nın cezai sorumluluğuna gidilebilmesi için öne sürülebilecek tek suçlama metinde nasıl ifade edilmiştir?",o:["Anayasayı ihlal", "Görevi kötüye kullanma", "Vatana ihanet", "Yasama yetkisini gasp etme"],c:2,e:""},
+{q:"1982 Anayasası'na göre, Türkiye Büyük Millet Meclisi tarafından kabul edilen kanunları yayımlamak veya yayımlanmasını uygun bulmadığı takdirde bir daha görüşülmek üzere Meclise geri göndermek yetkisi aşağıdakilerden hangisine aittir?",o:["Anayasa Mahkemesi Başkanı", "Cumhurbaşkanı", "TBMM Başkanı", "Adalet Bakanı"],c:1,e:""},
+{q:"1982 Anayasası'na göre aşağıdakilerden hangisi Millî Güvenlik Kurulunun (MGK) olağan üyeleri arasında yer almaz?",o:["Dışişleri Bakanı", "Jandarma Genel Komutanı", "Genelkurmay Başkanı", "Cumhurbaşkanı Yardımcıları"],c:1,e:""},
+{q:"Cumhurbaşkanı, yurdun tamamında veya bir bölgesinde olağanüstü hâl (OHAL) ilan etme yetkisine sahiptir. Anayasa'ya göre ilan edilen bu olağanüstü hâl kararı tek seferde en fazla kaç ay için geçerli olabilir?",o:["3 ay", "4 ay", "6 ay", "1 yıl"],c:2,e:""},
+{q:"1982 Anayasası'na göre, Millî Güvenlik Kurulunun gündemi; Cumhurbaşkanı yardımcıları ve Genelkurmay Başkanının önerileri dikkate alınarak aşağıdakilerden hangisi tarafından belirlenir?",o:["Milli Savunma Bakanı", "TBMM Başkanı", "İçişleri Bakanı", "Cumhurbaşkanı"],c:3,e:""},
+{q:"1982 Anayasası'na göre; Anayasa Mahkemesi üyelerini seçmek, Danıştay üyelerinin dörtte birini seçmek ve Yargıtay Cumhuriyet Başsavcısını seçmek, Cumhurbaşkanının hangi alandaki görev ve yetkileri kapsamında değerlendirilir?",o:["Yasama ile ilgili görevleri", "Yürütme ile ilgili görevleri", "Yargı ile ilgili görevleri", "İdari denetim görevleri"],c:2,e:""},
+{q:"Türkiye Büyük Millet Meclisinin manevi varlığından ayrılamayan ve Anayasal olarak Türkiye Büyük Millet Meclisi adına \"Başkomutanlığı\" temsil etme yetkisi kime verilmiştir?",o:["Millî Savunma Bakanı", "Genelkurmay Başkanı", "Cumhurbaşkanı", "Kuvvet Komutanları"],c:2,e:""},
+{q:"1982 Anayasası'na göre, üst kademe kamu yöneticilerini atamak ve görevlerine son vermek yetkisi aşağıdaki makamlardan hangisine aittir?",o:["Cumhurbaşkanı", "İlgili Bakanlıklar", "Devlet Personel Başkanlığı", "Türkiye Büyük Millet Meclisi"],c:0,e:""},
+{q:"1982 Anayasası'na göre, Türkiye Cumhuriyeti'ne gönderilecek olan yabancı devlet temsilcilerini (büyükelçileri) kabul etme görevi aşağıdakilerden hangisine aittir?",o:["Dışişleri Bakanı", "TBMM Başkanı", "Cumhurbaşkanı Yardımcısı", "Cumhurbaşkanı"],c:3,e:""},
+{q:"Kanunların, Cumhurbaşkanlığı kararnamelerinin veya TBMM İçtüzüğünün şekil veya esas bakımından Anayasaya aykırılığı gerekçesiyle Anayasa Mahkemesinde iptal davası açma yetkisi Anayasa'ya göre aşağıdakilerden hangisine tanınmıştır?",o:["Cumhurbaşkanı Yardımcıları", "Adalet Bakanı", "Cumhurbaşkanı", "Yargıtay Cumhuriyet Başsavcısı"],c:2,e:""},
+{q:"1982 Anayasası'na göre, gerekli gördüğü takdirde yasama yılının ilk günü olan 1 Ekim'de Türkiye Büyük Millet Meclisinde açılış konuşmasını yapmak yetkisi kime aittir?",o:["En Yaşlı Milletvekili", "TBMM Başkanı", "Cumhurbaşkanı", "İktidar Partisi Grup Başkanvekili"],c:2,e:""},
+{q:"1982 Anayasası'na göre Hâkimler ve Savcılar Kurulu (HSK) kaç üyeden oluşur ve kaç daire hâlinde çalışır?",o:["11 üye, 2 daire", "13 üye, 2 daire", "15 üye, 3 daire", "13 üye, 3 daire"],c:1,e:""},
+{q:"Hâkimler ve Savcılar Kurulu üyelerinin görev süresi kaç yıldır ve süresi biten üyelerin tekrar seçilme durumu nasıldır?",o:["4 yıl için seçilirler, süresi biten üyeler bir kez daha seçilebilir.", "5 yıl için seçilirler, tekrar seçilemezler.", "4 yıl için seçilirler, tekrar seçilemezler.", "5 yıl için seçilirler, sınırsız olarak tekrar seçilebilirler."],c:0,e:""},
+{q:"Hâkimler ve Savcılar Kurulu Genel Sekreteri, birinci sınıf hâkim ve savcılardan Kurulun teklif ettiği üç aday arasından kim tarafından atanır?",o:["Cumhurbaşkanı", "Adalet Bakanı", "Kurul Başkanı", "TBMM Başkanı"],c:2,e:""},
+{q:"Adalet Bakanlığının merkez, bağlı ve ilgili kuruluşlarında geçici veya sürekli olarak çalıştırılacak hâkim ve savcıları, adalet müfettişlerini atama yetkisi kime aittir?",o:["Cumhurbaşkanı", "Adalet Bakanı", "HSK Genel Kurulu", "Danıştay Başkanı"],c:1,e:""},
+{q:"Adliye mahkemelerince verilen ve kanunun başka bir adli yargı merciine bırakmadığı karar ve hükümlerin son inceleme mercii aşağıdakilerden hangisidir?",o:["Sayıştay", "Uyuşmazlık Mahkemesi", "Danıştay", "Yargıtay"],c:3,e:""},
+{q:"Yargıtayın kuruluşu, işleyişi, Cumhuriyet Başsavcısının nitelikleri ve mahkemelerin bağımsızlığı esasları aşağıdakilerden hangisiyle düzenlenir?",o:["Cumhurbaşkanlığı Kararnamesi", "Kanun", "Yönetmelik", "İçtüzük"],c:1,e:""},
+{q:"1982 Anayasası'na göre Yargıtay üyelerini seçme yetkisi aşağıdakilerden hangisine aittir?",o:["Cumhurbaşkanı", "TBMM", "Hâkimler ve Savcılar Kurulu", "Adalet Bakanlığı"],c:2,e:""},
+{q:"Yargıtay Başkanını seçme yetkisi hangi kuruma veya makama aittir?",o:["Cumhurbaşkanı", "Hâkimler ve Savcılar Kurulu", "Adalet Bakanı", "Yargıtay Genel Kurulu"],c:3,e:""},
+{q:"Yargıtay Cumhuriyet Başsavcısını ve vekilini 4 yıllığına atama yetkisi kime aittir?",o:["Cumhurbaşkanı", "Yargıtay Genel Kurulu", "Adalet Bakanı", "Hâkimler ve Savcılar Kurulu"],c:0,e:""},
+{q:"İdari mahkemelerce verilen ve kanunun başka bir idari yargı merciine bırakmadığı karar ve hükümlerin son inceleme mercii neresidir?",o:["Anayasa Mahkemesi", "Uyuşmazlık Mahkemesi", "Yargıtay", "Danıştay"],c:3,e:""},
+{q:"1982 Anayasası'na göre Danıştay Başsavcısını seçme görevi aşağıdakilerden hangisine aittir?",o:["Hâkimler ve Savcılar Kurulu", "Cumhurbaşkanı", "Danıştay Genel Kurulu", "Adalet Bakanı"],c:2,e:""},
+{q:"Danıştayın kuruluşu, işleyişi, üyelerinin nitelikleri ve seçim usulleri hangi hukuki araçla belirlenir?",o:["Kanun", "Cumhurbaşkanlığı Kararnamesi", "İçtihat Kararı", "Yönetmelik"],c:0,e:""},
+{q:"Danıştay Başkanı, Başsavcı, başkanvekilleri ve daire başkanları kendi üyeleri arasından hangi kurul tarafından ve ne kadar süre için seçilir?",o:["Hâkimler ve Savcılar Kurulu tarafından 5 yıl için", "Cumhurbaşkanı tarafından 4 yıl için", "Danıştay Genel Kurulunca üye tamsayısının salt çoğunluğu ile 4 yıl için", "TBMM Genel Kurulunca 4 yıl için"],c:2,e:""},
+{q:"Danıştay üyelerinin seçimi ile ilgili aşağıdaki oran ve makam eşleştirmelerinden hangisi doğrudur?",o:["Tamamını Hâkimler ve Savcılar Kurulu seçer.", "Dörtte üçünü Hâkimler ve Savcılar Kurulu, dörtte birini Cumhurbaşkanı seçer.", "Dörtte üçünü Cumhurbaşkanı, dörtte birini Hâkimler ve Savcılar Kurulu seçer.", "Yarısını TBMM, yarısını Cumhurbaşkanı seçer."],c:1,e:""},
+{q:"Adli ve idari yargı mercileri arasındaki görev ve hüküm uyuşmazlıklarını kesin olarak çözümlemeye yetkili yüksek mahkeme aşağıdakilerden hangisidir?",o:["Anayasa Mahkemesi", "Yargıtay", "Danıştay", "Uyuşmazlık Mahkemesi"],c:3,e:""},
+{q:"1982 Anayasası'na göre, siyasi partilerin mali denetimini yapmakla görevli yargı organı aşağıdakilerden hangisidir?",o:["Sayıştay", "Danıştay", "Anayasa Mahkemesi", "Yargıtay"],c:2,e:""},
+{q:"1982 Anayasası'na göre Anayasa Mahkemesi, Yargıtay ve Danıştay üyelerinin görev süresi kaç yıldır?",o:["4 yıl", "5 yıl", "9 yıl", "12 yıl"],c:3,e:""},
+{q:"1982 Anayasası'na göre Anayasa Mahkemesi; kanunların, Cumhurbaşkanlığı kararnamelerinin ve TBMM İçtüzüğünün Anayasaya uygunluğunu hangi bakımlardan denetler?",o:["Sadece şekil bakımından", "Sadece esas bakımından", "Şekil ve esas bakımlarından", "Yerindelik bakımından"],c:2,e:""},
+{q:"Anayasa Mahkemesi, Anayasa değişikliklerini hangi bakımdan inceler ve denetler?",o:["Şekil ve esas bakımından", "Sadece esas bakımından", "Sadece şekil bakımından", "Yerindelik bakımından"],c:2,e:""},
+{q:"Aşağıdakilerden hangisi görevleriyle ilgili suçlardan dolayı Anayasa Mahkemesi tarafından Yüce Divan sıfatıyla yargılanacak kişiler arasında yer almaz?",o:["Cumhurbaşkanı Yardımcıları", "Türkiye Büyük Millet Meclisi Başkanı", "Sayıştay Başkan ve üyeleri", "Jandarma Genel Komutanı"],c:3,e:""},
+{q:"Aşağıdaki makamlardan hangisi görevleriyle ilgili suçlardan dolayı Yüce Divanda yargılanmaz?",o:["Genelkurmay Başkanı", "Kara Kuvvetleri Komutanı", "Sahil Güvenlik Komutanı", "Hava Kuvvetleri Komutanı"],c:2,e:""},
+{q:"Anayasa Mahkemesinde doğrudan doğruya iptal davası açma hakkı, iptali istenen kanun, Cumhurbaşkanlığı kararnamesi veya içtüzüğün Resmî Gazetede yayımlanmasından başlayarak kaç gün sonra düşer?",o:["10 gün", "30 gün", "60 gün", "90 gün"],c:2,e:""},
+{q:"Anayasa Mahkemesinin işin esasına girerek verdiği ret kararının Resmî Gazetede yayımlanmasından sonra kaç yıl geçmedikçe aynı kanun hükmünün Anayasaya aykırılığı iddiasıyla tekrar başvuruda bulunulamaz?",o:["1 yıl", "3 yıl", "5 yıl", "10 yıl"],c:3,e:""},
+{q:"1982 Anayasası'na göre siyasi partilerin tüzük, program ve eylemlerinden ötürü Devlet yardımından kısmen veya tamamen yoksun bırakılmasına aşağıdakilerden hangisi karar verir?",o:["Yargıtay Cumhuriyet Başsavcılığı", "Yüksek Seçim Kurulu", "Anayasa Mahkemesi", "TBMM Başkanlığı"],c:2,e:""},
+{q:"Anayasa Mahkemesi kararlarının niteliğiyle ilgili aşağıdakilerden hangisi kesin olarak doğrudur?",o:["Kararlar kesin değildir, itiraz edilebilir.", "İptal kararları gerekçesi açıklanmadan yazılamaz.", "Kararlar onay için Cumhurbaşkanına sunulur.", "Kararlar sadece mecliste oylanarak yürürlüğe girer."],c:1,e:""},
+{q:"Anayasa Mahkemesinin çalışma esasları, bölüm ve komisyonların oluşumu ile işbölümü aşağıdakilerden hangisiyle düzenlenir?",o:["Kanun", "Cumhurbaşkanlığı Kararnamesi", "Kendi yapacağı İçtüzük", "Yönetmelik"],c:2,e:""},
+{q:"1982 Anayasası'na göre aşağıdakilerden hangisinin anayasaya aykırılığı ileri sürülemez?",o:["İnkılap kanunlarının", "Milletlerarası Antlaşmaların onaylanmasını uygun bulan kanunların", "Cumhurbaşkanlığı Kararnamelerinin", "TBMM İçtüzüğünün"],c:0,e:""},
+{q:"Yargının en yüksek idari kurulu aşağıdakilerden hangisidir?",o:["Anayasa Mahkemesi", "Yargıtay", "Hakimler ve Savcılar Kurulu", "Adalet Bakanlığı"],c:2,e:""},
+{q:"1982 Anayasası'na göre aşağıdakilerden hangisi Türkiye Büyük Millet Meclisi'nde yemin edenler arasında sayılmamıştır?",o:["Cumhurbaşkanı", "Bakanlar", "Kamu Başdenetçisi", "Yargıtay Başkanı"],c:3,e:""},
+{q:"Türkiye Büyük Millet Meclisi'nde bir siyasi parti grubunun kurulabilmesi için en az kaç milletvekiline ihtiyaç vardır?",o:["10", "20", "30", "50"],c:1,e:""},
+{q:"Hâkimler ve savcılar idari yönden aşağıdakilerden hangisine bağlıdır?",o:["Adalet Bakanına", "Hakimler ve Savcılar Kuruluna", "Yargıtay Başkanına", "Cumhurbaşkanına"],c:0,e:""},
+{q:"Sermayesinin yarısından fazlası doğrudan veya dolaylı olarak Devlete ait olan kamu kuruluş ve ortaklıklarının TBMM tarafından denetlenmesi esasları ne ile düzenlenir?",o:["Cumhurbaşkanlığı Kararnamesi", "Kanun", "TBMM İçtüzüğü", "Yönetmelik"],c:1,e:""},
+{q:"Atatürkçü düşünceyi ve Türk tarihini araştırmak, yaymak amacıyla Cumhurbaşkanının görevlendireceği bakana bağlı olarak kurulan kurum aşağıdakilerden hangisidir?",o:["Türk Dil Kurumu", "Atatürk Kültür, Dil ve Tarih Yüksek Kurumu", "Milli Eğitim Bakanlığı", "Kültür ve Turizm Bakanlığı"],c:1,e:""},
+{q:"Radyo ve televizyon faaliyetlerini düzenlemek ve denetlemek amacıyla kurulan Radyo ve Televizyon Üst Kurulu (RTÜK) kaç üyeden oluşur?",o:["7", "9", "11", "13"],c:1,e:""},
+{q:"Radyo ve televizyon faaliyetlerini düzenlemek ve denetlemek amacıyla kurulan üst kurul aşağıdakilerden hangisidir?",o:["Bilgi Teknolojileri ve İletişim Kurumu", "Yükseköğretim Kurulu", "Radyo ve Televizyon Üst Kurulu", "İletişim Başkanlığı"],c:2,e:""},
+{q:"Yükseköğretim kurumlarının öğretimini planlamak, düzenlemek, denetlemek ve kaynakların etkili kullanımını sağlamak maksadıyla kurulan kurum aşağıdakilerden hangisidir?",o:["Milli Eğitim Bakanlığı", "Üniversitelerarası Kurul", "Yükseköğretim Kurulu", "Talim ve Terbiye Kurulu"],c:2,e:""},
+{q:"Yükseköğretim Kurulu (YÖK) üyeleri, üniversiteler tarafından seçilen adaylar arasından veya doğrudan aşağıdakilerden hangisi tarafından seçilerek atanır?",o:["Milli Eğitim Bakanı", "TBMM", "Cumhurbaşkanı", "Danıştay"],c:2,e:""},
+{q:"Yükseköğretim Kuruluna (YÖK) üye atanırken özellikle rektörlük ve öğretim üyeliğinde başarılı hizmet yapmış olan hangi akademik unvana sahip kişilere öncelik verilir?",o:["Doçentlere", "Profesörlere", "Doktor Öğretim Üyelerine", "Araştırma Görevlilerine"],c:1,e:""},
+{q:"1982 Anayasası'na göre fakülte dekanlarını seçme yetkisi aşağıdakilerden hangisine aittir?",o:["Üniversite Rektörü", "Cumhurbaşkanı", "Yükseköğretim Kurulu (YÖK)", "Üniversite Senatosu"],c:2,e:""},
+{q:"Yükseköğretim Kurulunun teşkilatı, görev, yetki, sorumluluğu ve çalışma esasları aşağıdakilerden hangisi ile düzenlenir?",o:["Cumhurbaşkanlığı Kararnamesi", "Yönetmelik", "Kanun", "İçtüzük"],c:2,e:""},
+{q:"1982 Anayasası'na göre illerin idaresi hangi esasa dayanmaktadır?",o:["Yerinden yönetim", "Fonksiyonel yerinden yönetim", "Yetki genişliği", "Özerklik"],c:2,e:""},
+{q:"Mahalli idarelerin seçimleri kural olarak kaç yılda bir yapılır?",o:["3", "4", "5", "7"],c:2,e:""},
+{q:"Milli güvenliğin sağlanmasından ve Silahlı Kuvvetlerin yurt savunmasına hazırlanmasından kim sorumludur?",o:["Milli Savunma Bakanı", "Genelkurmay Başkanı", "TBMM Başkanı", "Cumhurbaşkanı"],c:3,e:""},
+{q:"Cumhurbaşkanı, milli güvenliğin sağlanmasından ve Silahlı Kuvvetlerin yurt savunmasına hazırlanmasından aşağıdakilerden hangisine karşı sorumludur?",o:["Anayasa Mahkemesine", "Türkiye Büyük Millet Meclisine", "Milli Güvenlik Kuruluna", "Halka"],c:1,e:""},
+{q:"Aşağıdaki kurumlardan hangisinde çalışan memurlar 657 sayılı Devlet Memurları Kanunu kapsamına girmez? (Soru kökü belgeye dayalı türetilmiştir)",o:["İl Özel İdareleri", "Belediyeler", "Kamu İktisadi Teşebbüsleri (KİT)", "Kefalet Sandıkları"],c:2,e:""},
+{q:"Devlet kamu hizmetleri görevlerini ve bu görevlerde çalışan Devlet memurlarını görevlerin gerektirdiği niteliklere ve mesleklere göre ayırmayı ifade eden 657 sayılı DMK ilkesi hangisidir?",o:["Liyakat", "Kariyer", "Sınıflandırma", "Eşitlik"],c:2,e:""},
+{q:"Devlet memurlarına, yaptıkları hizmetler için lüzumlu bilgilere ve yetişme şartlarına uygun şekilde, sınıfları içinde en yüksek derecelere kadar ilerleme imkânını sağlayan temel ilke hangisidir?",o:["Liyakat", "Kariyer", "Sınıflandırma", "İntibak"],c:1,e:""},
+{q:"Devlet kamu hizmetleri görevlerine girmeyi, sınıflar içinde ilerleme ve yükselmeyi, görevin sona erdirilmesini eşit imkanlarla yeteneğe dayandıran temel ilke hangisidir?",o:["Liyakat", "Kariyer", "Sınıflandırma", "Serbestlik"],c:0,e:""},
+{q:"657 sayılı Devlet Memurları Kanunu toplam kaç adet istihdam şekli öngörmüştür?",o:["2", "3", "4", "5"],c:1,e:""},
+{q:"Aşağıdakilerden hangisi 657 sayılı Devlet Memurları Kanunu'nda öngörülen istihdam şekillerinden biri değildir?",o:["Memur", "Sözleşmeli personel", "İşçi", "Geçici personel"],c:3,e:""},
+{q:"Devlet ve diğer kamu tüzel kişiliklerince genel idare esaslarına göre yürütülen asli ve sürekli kamu hizmetlerini ifa ile görevlendirilenlere ne ad verilir?",o:["İşçi", "Sözleşmeli personel", "Memur", "İstisna akitli personel"],c:2,e:""},
+{q:"Zaruri ve istisnai hallere münhasır olmak üzere özel bir meslek bilgisine ihtiyaç gösteren geçici işlerde mali yılla sınırlı olarak çalıştırılan görevlilere ne ad verilir?",o:["Geçici işçi", "Sözleşmeli personel", "Sürekli işçi", "Memur"],c:1,e:""},
+{q:"Sözleşmeli personelin çalıştırılmasına ilişkin usul ve esaslar aşağıdakilerden hangisi tarafından belirlenir?",o:["Türkiye Büyük Millet Meclisi", "Cumhurbaşkanı", "Devlet Personel Başkanlığı", "Hazine ve Maliye Bakanlığı"],c:1,e:""},
+{q:"İş Kanunu çerçevesinde, belirsiz süreli iş sözleşmeleriyle istihdam edilen kamu görevlilerine ne denir?",o:["Geçici işçi", "Sözleşmeli personel", "Sürekli işçi", "Taşeron"],c:2,e:""},
+{q:"İş Kanunu çerçevesinde belirli süreli iş sözleşmeleriyle çalıştırılan geçici işçilerin çalışma süresi en fazla ne kadardır?",o:["3 aydan az", "6 aydan az", "1 yıldan az", "Mali yıl ile sınırlı"],c:1,e:""},
+{q:"Devlet memurlarının, Anayasaya ve kanunlara sadakatla bağlı kalmak ve kanunları sadakatla uygulamak zorunda olmaları memurların hangi sorumluluğu ile ilgilidir?",o:["Tarafsızlık", "Sadakat", "İtaat", "Hizmet"],c:1,e:""},
+{q:"Devlet memurları \"Asli Devlet Memurluğuna\" atandıktan sonra yemin etme işlemini en geç ne kadar süre içinde yapmak zorundadır?",o:["15 gün", "1 ay", "2 ay", "6 ay"],c:1,e:""},
+{q:"Asli memurluğa atanan personelin imzaladığı \"Yemin Belgesi\" nereye konulur?",o:["Kurum arşivine", "Sicil dosyasına", "Özlük dosyasına", "Disiplin dosyasına"],c:2,e:""},
+{q:"Devlet memuru amirinden aldığı emri; Anayasa, kanun, Cumhurbaşkanlığı kararnamesi ve yönetmelik hükümlerine aykırı görürse ilk olarak ne yapmalıdır?",o:["Emri derhal yerine getirir.", "Emri yerine getirmez ve aykırılığı emri verene bildirir.", "Emri yazılı olarak ister.", "Durumu üst amire şikayet eder."],c:1,e:""},
+{q:"Amir, kanuna aykırı olduğu kendisine bildirilen emrinde ısrar eder ve bu emrini yazı ile yenilerse memurun izlemesi gereken yol nedir?",o:["Emri kesinlikle uygulamaz.", "Adli makamlara başvurur.", "Emri yapmaya mecburdur.", "İstifa etme hakkını kullanır."],c:2,e:""},
+{q:"Kanuna aykırı olduğu halde amirin yazılı olarak yenilediği ve memurun uygulamaya mecbur kaldığı emrin yerine getirilmesinden doğacak hukuki sorumluluk kime aittir?",o:["Memurun kendisine", "Emri veren amire", "Kurum en üst amirine", "Hem memura hem amire"],c:1,e:""},
+{q:"Devlet memurunun kasıt, kusur, ihmal veya tedbirsizliği sonucu idare zarara uğratılmışsa, bu zararın ilgili memur tarafından ödenmesinde hangi bedel esas alınır?",o:["Fatura bedeli", "Amortisman bedeli", "Kasko bedeli", "Rayiç bedeli"],c:3,e:""},
+{q:"657 sayılı Devlet Memurları Kanunu'na göre bir devlet memuru, mal bildirimini kimlerin mal varlığını kapsayacak şekilde vermekle yükümlüdür?",o:["Yalnızca kendisi", "Kendisi ve eşi", "Kendisi, eşi ve velayeti altındaki çocukları", "Kendisi, eşi, çocukları ve bakmakla yükümlü olduğu anne-babası"],c:2,e:""},
+{q:"Devlet memurlarının vermekle yükümlü olduğu mal bildirimi neleri kapsar?",o:["Sadece kendi adlarına kayıtlı taşınmaz malları", "Taşınır ve taşınmaz mallar ile alacak ve borçları", "Yalnızca ticari amaçlı taşınır malları ve banka hesaplarını", "Sadece döviz, altın ve hisse senedi gibi menkul kıymetleri"],c:1,e:""},
+{q:"Devlet memurlarının ticaret yapma yasağı kapsamında, Türk Ticaret Kanunu'na göre hangi unvanları gerektirecek faaliyetlerde bulunmaları kesinlikle yasaktır?",o:["Sadece Tacir", "Sadece Esnaf", "Müşavir veya Danışman", "Tacir veya Esnaf"],c:3,e:""},
+{q:"657 sayılı Kanun'a göre memurların şirket ortaklıklarıyla ilgili olarak aşağıdakilerden hangisi kesinlikle yasaktır?",o:["Anonim şirketlere hissedar olmak", "Kollektif şirketlerde ortak veya komandit şirkette komandite ortak olmak", "Kooperatiflere üye olmak", "Limited şirketlerde hisse sahibi olmak"],c:1,e:""},
+{q:"Devlet memurlarının ticari müesseselerde görev almama kuralının yasal istisnası aşağıdakilerden hangisidir?",o:["Memurun kendi adına şahıs şirketi kurması", "Aile şirketlerinde sadece denetçi olarak bulunması", "Görevli oldukları kurumların iştiraklerinde kurumlarını temsilen alacakları görevler", "Kâr amacı gütmeyen vakıf şirketlerinde yönetim kurulu başkanı olması"],c:2,e:""},
+{q:"Kamu görevlilerinin hediye alma yasağının kapsamını belirlemeye yetkili olan kurul aşağıdakilerden hangisidir?",o:["Devlet Personel Başkanlığı", "Kamu Görevlileri Etik Kurulu", "Hâkimler ve Savcılar Kurulu", "Devlet Denetleme Kurulu"],c:1,e:""},
+{q:"Kamu Görevlileri Etik Kurulu, her takvim yılı sonunda alınan hediyelerin listesini hangi seviyedeki kamu görevlilerinden istemeye yetkilidir?",o:["Tüm devlet memurlarından", "Şube müdürü ve üstü seviyedeki yöneticilerden", "En az genel müdür veya eşiti seviyedeki üst düzey kamu görevlilerinden", "Yalnızca vali ve kaymakamlardan"],c:2,e:""},
+{q:"Memurun öğrenim durumu, hizmet yılı ve geçmişteki hizmetleri esas alınarak müktesebinin ilerleyebileceği derece ve kademesinin tespit edilmesi işlemine ne ad verilir?",o:["Terfi", "İntibak", "Atama", "Kademe ilerlemesi"],c:1,e:""},
+{q:"657 sayılı Kanun'a göre \"Derece Yükselmesi\" yapılabilmesi için gereken asgari süre şartları aşağıdakilerden hangisinde doğru verilmiştir?",o:["Derecesi içinde en az 1 yıl, kademesinde 3 yıl bulunmak", "Derecesi içinde en az 2 yıl, kademesinde 1 yıl bulunmak", "Derecesi içinde en az 3 yıl ve bu derecenin 3. kademesinde 1 yıl bulunmak", "Derecesi içinde en az 5 yıl bulunmak"],c:2,e:""},
+{q:"Derece yükselmesinin yapılabilmesi için süre şartı dışında aranan \"kadro\" ile ilgili ön şart nedir?",o:["Alt dereceden boş bir kadronun bulunması", "Üst dereceden boş bir kadronun bulunması", "Başka kurumda eşdeğer bir kadronun açılması", "Yeni bir kadro ihdas edilmesi"],c:1,e:""},
+{q:"Derece içinde, görevin önemi veya sorumluluğu artmadan, memurun aylığındaki ilerlemeye ne ad verilir?",o:["Derece yükselmesi", "İntibak", "Terfi", "Kademe"],c:3,e:""},
+{q:"Görevde iken üst öğrenimi bitiren bir memurun intibak işlemlerinde dikkate alınacak olan \" emsal\"in tanımı aşağıdakilerden hangisidir?",o:["Aynı üst öğrenimi memuriyetten önce dışarıdan bitiren herhangi bir kişi", "Aynı üst öğrenimi tahsile ara vermeden başlayan ve normal süresi içinde bitirdikten sonra memuriyete giren kişi", "Memurla aynı yaşta olup aynı bölümden mezun olan amir statüsündeki kişi", "Üst öğrenimi aynı sürede fakat memuriyet dışındayken bitiren kişi"],c:1,e:""},
+{q:"Kanun kapsamında yönetim, icra, büro ve benzeri hizmetleri gören ve diğer sınıflara girmeyen memurların dâhil olduğu hizmet sınıfı hangisidir?",o:["Yardımcı Hizmetler Sınıfı", "Mülki İdare Amirliği Hizmetleri Sınıfı", "Genel İdare Hizmetleri Sınıfı", "Teknik Hizmetler Sınıfı"],c:2,e:""},
+{q:"Mühendis, mimar, şehir plancısı, jeolog, matematikçi, tütün eksperi ve fen memuru gibi meslekleriyle ilgili görevleri fiilen ifa eden memurlar hangi hizmet sınıfına girer?",o:["Genel İdare Hizmetleri Sınıfı", "Teknik Hizmetler Sınıfı", "Eğitim ve Öğretim Hizmetleri Sınıfı", "Yardımcı Hizmetler Sınıfı"],c:1,e:""},
+{q:"Tabip, diş tabibi, eczacı, ebe, hemşire, fizyoterapist, psikolog, diyetçi ve hayvan sağlık memuru gibi memurlar hangi hizmet sınıfına dâhildir?",o:["Teknik Hizmetler Sınıfı", "Genel İdare Hizmetleri Sınıfı", "Sağlık Hizmetleri ve Yardımcı Sağlık Hizmetleri Sınıfı", "Sosyal Hizmetler Sınıfı"],c:2,e:""},
+{q:"Kurumlarda eğitim ve öğretim vazifesiyle görevlendirilen öğretmenler hangi hizmet sınıfını oluşturur?",o:["Genel İdare Hizmetleri Sınıfı", "Eğitim ve Öğretim Hizmetleri Sınıfı", "Akademik Hizmetler Sınıfı", "Teknik Hizmetler Sınıfı"],c:1,e:""},
+{q:"Özel kanunlarına göre avukatlık ruhsatına sahip, baroya kayıtlı ve kurumlarını yargı mercilerinde temsil yetkisini haiz olan memurlar hangi sınıftadır?",o:["Genel İdare Hizmetleri Sınıfı", "Hukuk Hizmetleri Sınıfı", "Avukatlık Hizmetleri Sınıfı", "Mülki İdare Amirliği Hizmetleri Sınıfı"],c:2,e:""},
+{q:"Özel kanunlarına göre çeşitli derecelerde dini eğitim görmüş olan ve dini görev yapan memurlar hangi hizmet sınıfında yer alır?",o:["Genel İdare Hizmetleri Sınıfı", "Eğitim ve Öğretim Hizmetleri Sınıfı", "Din Hizmetleri Sınıfı", "Yardımcı Hizmetler Sınıfı"],c:2,e:""},
+{q:"Çarşı ve mahalle bekçisi, polis, komiser, emniyet müfettişi ve emniyet müdürü sıfatını kazanmış memurlar hangi hizmet sınıfına girer?",o:["Mülki İdare Amirliği Hizmetleri Sınıfı", "Sahil Güvenlik Hizmetleri Sınıfı", "Jandarma Hizmetleri Sınıfı", "Emniyet Hizmetleri Sınıfı"],c:3,e:""},
+{q:"Jandarma Genel Komutanlığı kadrolarında bulunan subay, astsubay, uzman jandarma ile çarşı ve mahalle bekçilerini kapsayan sınıf hangisidir?",o:["Milli Savunma Hizmetleri Sınıfı", "Jandarma Hizmetleri Sınıfı", "Emniyet Hizmetleri Sınıfı", "Mülki İdare Amirliği Hizmetleri Sınıfı"],c:1,e:""},
+{q:"Sahil Güvenlik Komutanlığı kadrolarında bulunan subay ve astsubaylar hangi hizmet sınıfında istihdam edilir?",o:["Denizcilik Hizmetleri Sınıfı", "Sahil Güvenlik Hizmetleri Sınıfı", "Emniyet Hizmetleri Sınıfı", "Jandarma Hizmetleri Sınıfı"],c:1,e:""},
+{q:"Kurumlarda her türlü yazı ve dosya dağıtmak, müracaat sahiplerini karşılamak, hizmet yerlerini temizleme, aydınlatma, ısıtma işlerinde çalışmak veya basit iklim rasatlarını yapmakla görevli personel hangi sınıftadır?",o:["Genel İdare Hizmetleri Sınıfı", "Teknik Hizmetler Sınıfı", "Yardımcı Hizmetler Sınıfı", "Destek Hizmetleri Sınıfı"],c:2,e:""},
+{q:"Valiler, kaymakamlar ile İçişleri Bakanlığı merkez ve iller kuruluşunda çalışanları ve maiyet memurlarını kapsayan sınıf aşağıdakilerden hangisidir?",o:["Genel İdare Hizmetleri Sınıfı", "Mülki İdare Amirliği Hizmetleri Sınıfı", "Yönetim Hizmetleri Sınıfı", "Denetim Hizmetleri Sınıfı"],c:1,e:""},
+{q:"Milli İstihbarat Teşkilatı kadrolarında veya bu teşkilat emrinde çalıştırılanlardan özel kanunlarında gösterilen görevleri ifa edenler hangi sınıftadır?",o:["Emniyet Hizmetleri Sınıfı", "Mülki İdare Amirliği Hizmetleri Sınıfı", "Milli İstihbarat Hizmetleri Sınıfı", "Genel İdare Hizmetleri Sınıfı"],c:2,e:""},
+{q:"657 sayılı Devlet Memurları Kanunu'na göre \"İlkokulu bitirenlerin\" memuriyete giriş derece ve kademesi aşağıdakilerden hangisidir?",o:["15. derecenin 1. kademesi", "14. derecenin 2. kademesi", "13. derecenin 1. kademesi", "12. derecenin 2. kademesi"],c:0,e:""},
+{q:"\"Ortaokulu bitiren\" bir devlet memurunun, kanunen yükselebileceği en üst (son) derece aşağıdakilerden hangisidir?",o:["7. Derece", "5. Derece", "4. Derece", "3. Derece"],c:1,e:""},
+{q:"\"Ortaokul dengi mesleki veya teknik öğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi aşağıdakilerden hangisidir?",o:["14. derecenin 2. kademesi", "14. derecenin 3. kademesi", "13. derecenin 1. kademesi", "13. derecenin 2. kademesi"],c:1,e:""},
+{q:"\"Ortaokul üstü 1 yıl mesleki veya teknik öğrenimi bitirenlerin\" giriş derece/kademesi ile yükselebilecekleri son derece hangisidir?",o:["Giriş: 14/3 - Son: 5", "Giriş: 13/1 - Son: 4", "Giriş: 13/2 - Son: 4", "Giriş: 12/2 - Son: 3"],c:1,e:""},
+{q:"\"Ortaokul üstü 2 yıl mesleki veya teknik öğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi kaçtır?",o:["14 / 3", "13 / 1", "13 / 2", "12 / 2"],c:2,e:""},
+{q:"\"Liseyi bitiren\" (düz lise mezunu) bir devlet memuru hangi derece ve kademeden göreve başlar?",o:["13. derecenin 2. kademesi", "13. derecenin 3. kademesi", "12. derecenin 2. kademesi", "11. derecenin 1. kademesi"],c:1,e:""},
+{q:"\"Lise dengi mesleki veya teknik öğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi hangisidir?",o:["13 / 3", "12 / 2", "11 / 1", "10 / 1"],c:1,e:""},
+{q:"\"Lise veya dengi okullar üstü 1 yıllık mesleki veya teknik öğrenimi bitirenlerin\" yükselebileceği son derece kaçtır?",o:["4. Derece", "3. Derece", "2. Derece", "1. Derece"],c:2,e:""},
+{q:"\"Lise veya dengi okullar üstü 2 yıl veya Ortaokul üstü en az 5 yıllık mesleki/teknik öğrenimi bitirenler\" hangi derece ve kademeden giriş yapar?",o:["11 / 1", "10 / 1", "10 / 2", "9 / 1"],c:1,e:""},
+{q:"\"Lise veya dengi okullar üstü 3 yıl teknik veya mesleki öğrenimi bitirenlerin\" giriş derece ve kademesi kaçtır?",o:["10 / 1", "10 / 2", "9 / 1", "9 / 2"],c:1,e:""},
+{q:"\"2 yıl süreli yükseköğrenimi ( Önlisans ) bitirenlerin\" memuriyete giriş derece/kademesi ile yükselebilecekleri son derece hangisidir?",o:["Giriş: 10/1 - Son: 2", "Giriş: 10/2 - Son: 1", "Giriş: 10/3 - Son: 1", "Giriş: 9/1 - Son: 1"],c:1,e:""},
+{q:"\"3 yıl süreli yükseköğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi kaçtır?",o:["10 / 2", "10 / 3", "9 / 1", "9 / 2"],c:1,e:""},
+{q:"\"4 yıl süreli yükseköğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi aşağıdakilerden hangisidir?",o:["10 / 3", "9 / 1", "9 / 2", "8 / 1"],c:1,e:""},
+{q:"\"5 yıl süreli yükseköğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi kaçtır?",o:["9 / 1", "9 / 2", "9 / 3", "8 / 1"],c:1,e:""},
+{q:"\"6 yıl süreli yükseköğrenimi bitirenlerin\" memuriyete giriş derece ve kademesi kaçtır?",o:["9 / 1", "9 / 2", "9 / 3", "8 / 1"],c:2,e:""},
+{q:"Avukatlık stajını memuriyete girmeden önce (açıkta iken) yapanlara intibak işlemlerinde ne kadarlık bir ilerleme uygulanır?",o:["Bir kademe ilerlemesi", "İki kademe ilerlemesi", "Bir derece ilerlemesi", "İki derece ilerlemesi"],c:1,e:""},
+{q:"Avukatlık stajını doğrudan memuriyette iken yapan kamu görevlilerine intibak işlemlerinde ne kadarlık bir ilerleme uygulanır?",o:["Bir kademe ilerlemesi", "İki kademe ilerlemesi", "Üç kademe ilerlemesi", "Bir derece ilerlemesi"],c:0,e:""},
+{q:"Dört yıllık yüksekokul mezunlarından; mimar, mühendis unvanını alanlar ile Erkek Teknik Yüksek Öğretmen Okulu mezunlarının giriş derecelerine ne kadarlık bir ilave yapılır?",o:["Bir kademe", "İki kademe", "Bir derece", "İki derece"],c:2,e:""},
+{q:"Teknik hizmetler sınıfında görev almak şartıyla \"teknikerlere ve istatistikçilere\" öğrenimlerine göre tespit edilen giriş derece ve kademelerine nasıl bir ilave yapılır?",o:["Bir kademe", "İki kademe", "Bir derece", "Bir derece ve bir kademe"],c:2,e:""},
+{q:"Ortaokul ve dengi, lise ve dengi okulların normal öğrenim sürelerinden \"fazla\" okunan her yılı için memura ne verilir?",o:["İki kademe", "Bir kademe", "Bir derece", "Kıdem tazminatı"],c:1,e:""},
+{q:"657 sayılı Kanun'a göre \"Yüksek lisans\" çalışması yapan devlet memurlarına hangi ilerleme verilir?",o:["Bir kademe", "İki kademe", "Bir derece", "İki derece"],c:0,e:""},
+{q:"\"Doktora\" çalışması yapan devlet memurlarına hangi ilerleme verilir?",o:["Bir kademe", "İki kademe", "Bir derece", "İki derece"],c:2,e:""},
+{q:"Daha önce yüksek lisans dolayısıyla bir kademe almış olan ve sonrasında doktora çalışmasını tamamlayan memurlara bu aşamada ilave olarak ne verilir?",o:["Bir kademe", "İki kademe", "Bir derece", "Derece yükselmesi"],c:1,e:""},
+{q:"Doktora üstü üniversite doçentliği unvanını \"üniversitede görevli iken\" kazananlara nasıl bir ilerleme uygulanır?",o:["Bir kademe", "İki kademe", "Bir derece", "İki derece"],c:2,e:""},
+{q:"Doktora üstü üniversite doçentliği unvanını \"memuriyette iken\" (üniversite dışında) kazananlara nasıl bir ilerleme uygulanır?",o:["Bir kademe", "İki kademe", "Bir derece", "Derece ve kademe"],c:1,e:""},
+{q:"Türkiye ve Ortadoğu Amme İdaresi Enstitüsünü (TODAİE) bitirenlere (2 yılı aşmamak üzere) her başarılı öğrenim yılı için ne verilir?",o:["Bir kademe", "İki kademe", "Bir derece", "Hizmet puanı"],c:0,e:""},
+{q:"Aday olarak atanmış Devlet memurunun adaylık süresi kanunen en az ve en çok ne kadar olabilir?",o:["En az 6 ay, en çok 1 yıl", "En az 1 yıl, en çok 2 yıl", "En az 1 yıl, en çok 3 yıl", "En az 2 yıl, en çok 4 yıl"],c:1,e:""},
+{q:"Devlet memurunun adaylık süresi içerisinde aşağıdaki işlemlerden hangisinin yapılması kesinlikle yasaktır?",o:["Hizmet içi eğitim alması", "Disiplin cezası alması", "Başka kurumlara naklinin yapılması", "Sağlık raporu alması"],c:2,e:""},
+{q:"Bir aday memurun asli memurluğa atanabilmesi için aşağıdaki eğitimlerden hangisinden geçmesi ve başarılı olması şarttır?",o:["Sadece Temel Eğitim", "Temel Eğitim ve Staj", "Hazırlayıcı Eğitim ve Staj", "Temel Eğitim, Hazırlayıcı Eğitim ve Staj eğitimleri"],c:3,e:""},
+{q:"Adaylık süresi içerisinde disiplin cezalarından \"Aylıktan kesme\" veya \"Kademe ilerlemesinin durdurulması\" cezası alan aday memur hakkında nasıl bir işlem tesis edilir?",o:["Adaylık süresi 1 yıl uzatılır.", "Disiplin kuruluna sevk edilerek uyarılır.", "İlişikleri kesilir.", "Yeniden temel eğitime alınır."],c:2,e:""},
+{q:"Adaylık devresi içinde eğitimde başarılı olan adayların asli memurluğa atanma işlemi hangi usulle gerçekleştirilir?",o:["Sınav komisyonunun kararıyla", "Disiplin amirlerinin teklifi ve atamaya yetkili amirin onayı ile", "Doğrudan valinin onayı ile", "Devlet Personel Başkanlığının teklifi ile"],c:1,e:""},
+{q:"Adaylık devresi içinde veya sonunda (sağlık nedenleri hariç) ilişikleri kesilenler, ne kadar süreyle tekrar Devlet memurluğuna alınmazlar?",o:["1 yıl", "2 yıl", "3 yıl", "Ömür boyu"],c:2,e:""},
+{q:"Aynı yerdeki (ikamet edilen yerdeki) görevlere atanan devlet memurları işe ne zaman başlamak zorundadırlar?",o:["Atama emrinin tebliğ edildiği gün", "Atama emrinin tebliğ gününü izleyen iş günü içinde", "Tebliğden itibaren 15 gün içinde", "Bir sonraki aybaşında"],c:1,e:""},
+{q:"657 sayılı DMK'ya göre genel olarak bir kişinin Devlet memuru olabilmesi için kaç yaşını tamamlamış olması gerekir?",o:["15", "18", "21", "25"],c:1,e:""},
+{q:"Bir meslek veya sanat okulunu bitirenlerin istisnai olarak Devlet memurluklarına atanabilmesi için asgari kaç yaşını doldurmuş olmaları ve hangi kararı almış olmaları şarttır?",o:["15 yaşını doldurmuş olmak ve kazai rüşt kararı almak", "16 yaşını doldurmuş olmak ve veli muvafakati almak", "17 yaşını doldurmuş olmak ve lise diploması almak", "15 yaşını doldurmuş olmak ve savcılık izni almak"],c:0,e:""},
+{q:"657 sayılı Kanuna göre Devlet memurluğuna alınacaklarda aranan genel şartlar arasında aşağıdakilerden hangisi yer almaz?",o:["Türk Vatandaşı olmak", "Kamu haklarından mahrum bulunmamak", "En az lise mezunu olmak", "Kanunun 40 ncı maddesindeki yaş şartlarını taşımak"],c:2,e:""},
+{q:"Devlet memurluğuna alınacaklarda aranan genel şartlardan olan \"hapis cezası\" kriterine göre, kasten işlenen bir suçtan dolayı en az ne kadar süreyle hapis cezasına mahkûm olmamak şartı aranır?",o:["6 ay", "1 yıl", "2 yıl", "3 yıl"],c:1,e:""},
+{q:"Aşağıdaki suçlardan hangisinden mahkûm olanlar affa uğramış olsalar bile Devlet memurluğuna alınamazlar?",o:["Taksirli trafik kazası", "İhaleye fesat karıştırma", "Hakaret", "Kasten yaralama"],c:1,e:""},
+{q:"Devlet memurluğuna alınacaklarda aranan askerlik şartı ile ilgili aşağıdakilerden hangisi yanlıştır?",o:["Askerlikle ilgisi bulunmamak", "Askerlik çağına gelmemiş bulunmak", "Askerlik çağına gelmiş ise askerlikten muaf tutulmuş olmak zorunluluğu", "Askerlik çağına gelmiş ise muvazzaf askerlik hizmetini yapmış yahut ertelenmiş veya yedek sınıfa geçirilmiş olmak"],c:2,e:""},
+{q:"Devlet memurluğuna alınacaklarda sağlık şartı olarak aşağıdakilerden hangisinin bulunmaması genel şartlar arasında açıkça sayılmıştır?",o:["Bulaşıcı hastalık", "Görevini devamlı yapmasına engel olabilecek akıl hastalığı", "Kronik kalp rahatsızlığı", "İleri derece görme bozukluğu"],c:1,e:""},
+{q:"Başka yerdeki görevlere atanan devlet memurları, atama emirlerinin kendilerine tebliğ tarihinden itibaren kaç gün içerisinde o yere hareket etmek zorundadırlar?",o:["7 gün", "10 gün", "15 gün", "30 gün"],c:2,e:""},
+{q:"Başka yerdeki görevlere atanan devlet memurları, verilen süre içerisinde o yere hareket ederek hangi süreyi izleyen iş günü içinde işe başlamak zorundadırlar?",o:["Atama süresini", "Belli yol süresini", "İzin süresini", "Taşınma süresini"],c:1,e:""},
+{q:"Yeni görevine süresi içinde başlamayanlara, aylık verilmemek şartı ile kaç günlük bir süre daha verilebilir?",o:["5 gün", "7 gün", "10 gün", "15 gün"],c:2,e:""},
+{q:"Yeni görevine süresinde başlamayıp kendisine ilave süre verilen memurun bu ilave süresi içindeki mali hakkı ile ilgili hangisi doğrudur?",o:["Yarım aylık verilir.", "Çift aylık verilir.", "Aylığı tam verilir.", "Aylık verilmez."],c:3,e:""},
+{q:"Savaş ve olağanüstü hallerde, başka yere atanan memurların işe başlama süreleri kimin kararı ile kısaltılabilir?",o:["Cumhurbaşkanı", "TBMM", "İçişleri Bakanı", "İlgili Bakan"],c:0,e:""},
+{q:"Belirtilen süre içinde yeni işine başlamayanların atamasıyla ilgili hangi işlem yapılır?",o:["Atanmaları dondurulur.", "Atanmaları iptal edilir.", "Görev yeri değiştirilir.", "Uyarma cezası verilir."],c:1,e:""},
+{q:"Kendisine tanınan süreler içinde işe başlamadığı için atanması iptal edilen memurlar, kaç yıl süreyle Devlet memuru olarak istihdam edilemezler?",o:["1 yıl", "2 yıl", "3 yıl", "5 yıl"],c:0,e:""},
+{q:"Askerlik görevini tamamlayıp memuriyete dönmek isteyenler, terhis tarihinden itibaren en geç kaç gün içinde kurumlarına başvurmak zorundadır?",o:["10 gün", "15 gün", "30 gün", "45 gün"],c:2,e:""},
+{q:"Terhis olup süresi içinde kurumuna başvuran memuru, kurumları başvuru tarihinden itibaren en geç kaç gün içinde göreve başlatmak zorundadır?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"657 sayılı Kanunun 88 inci maddesine göre, \" Tabipler\"e aşağıdaki görevlerden hangisi ikinci görev olarak verilemez?",o:["Sağlık müdürlüğü", "Sağlık grup başkanlığı", "Baştabiplik", "Eczane müdürlüğü"],c:3,e:""},
+{q:"İkinci görev verilecek memurlar kapsamında, \"Diş hekimlerine ve veterinerlere\" meslekleri ile ilgili olarak hangi ikinci görev verilebilir?",o:["Sağlık müdürlüğü", "Baştabiplik", "Sağlık grup başkanlığı", "Eczane işletmeciliği"],c:1,e:""},
+{q:"657 sayılı Kanuna göre \"Veteriner, diş hekimi ve eczacılara\" ortak olarak verilebilecek ikinci görev aşağıdakilerden hangisidir?",o:["Sağlık müdür yardımcılığı", "Sağlık grup başkanlığı", "Baştabip yardımcılığı", "Baştabiplik"],c:2,e:""},
+{q:"657 sayılı Kanuna göre \"Öğretmenlere\" ikinci görev olarak aşağıdakilerden hangisi verilebilir?",o:["İlçe milli eğitim müdürlüğü", "Eğitim müfettişliği", "Okul ve enstitü müdürlüğü, başyardımcılığı ve yardımcılığı", "Eğitim ataşeliği"],c:2,e:""},
+{q:"657 sayılı Kanuna göre, göreve geçerli mazereti olmaksızın ve kesintisiz olarak kaç gün gelinmemesi memurluktan çekilmiş sayılma (istifa) hallerinden biridir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:3,e:""},
+{q:"Aşağıdakilerden hangisi devlet memurluğundan çekilmiş (istifa etmiş) sayılma hallerinden biridir?",o:["Disiplin cezası nedeniyle 10 gün uzaklaştırma almak", "Aylıksız izin süresinin bitiminden itibaren 10 gün içinde görevine dönmemek", "Raporlu olunan sürenin bitiminde 5 gün göreve gelmemek", "Yıllık izin dönüşü 3 gün gecikmek"],c:1,e:""},
+{q:"Yurtdışına gönderilen memurların, memurluktan çekilmiş sayılabilmesi için izin süresinin bitiminden itibaren ne yapmamaları gerekir?",o:["5 gün içinde rapor almamaları", "Mazeret bildirmemeleri", "Göreve başlamamaları", "Kuruma dilekçe vermemeleri"],c:2,e:""},
+{q:"Naklen atanan bir memurun memurluktan çekilmiş sayılmasına yol açan durum aşağıdakilerden hangisidir?",o:["Yolluğunu geç alması", "İzin süresini aşması", "Eski görev yerinden ayrılmaması", "Göreve başlamaması"],c:3,e:""},
+{q:"Aşağıdakilerden hangisi 657 sayılı Kanuna göre \"Memurluğun Sona Erme Halleri\"nden (Madde 98) biri değildir?",o:["Memurluktan çıkarılma", "Memurluktan çekilme", "Aylıktan kesme cezası alma", "İstek veya yaş haddi ile emekliye ayrılma"],c:2,e:""},
+{q:"Memurluğa alınma şartlarından herhangi birini taşımadığının sonradan anlaşılması veya memurlukları sırasında bu şartlardan herhangi birini kaybetmesi durumunda memur hakkında hangi işlem tesis edilir?",o:["Açığa alınır.", "Memurluğu sona erer.", "Aylıktan kesme cezası verilir.", "Derece ilerlemesi durdurulur."],c:1,e:""},
+{q:"Kurumlar gerektiği takdirde personelini günlük çalışma saatleri dışında fazla çalışma ücreti vermeksizin çalıştırdıklarında, personele yaptırılacak fazla çalışmanın her kaç saati için bir gün hesabı ile izin verilir?",o:["5 saat", "6 saat", "8 saat", "10 saat"],c:2,e:""},
+{q:"Fazla çalışma karşılığında verilecek iznin en çok kaç günlük kısmı yıllık izinle birleştirilerek yılı içinde kullandırılabilir?",o:["5 gün", "10 gün", "15 gün", "20 gün"],c:1,e:""},
+{q:"Aşağıdakilerden hangisi memurlara sağlanan \"Sosyal Haklar\" arasında sayılmamıştır?",o:["Emeklilik Yardımı", "Doğum Yardımı Ödeneği", "Cenaze Giderleri", "Ulaşım (Servis) Yardımı"],c:3,e:""},
+{q:"Bu Kanuna tabi kurumlarda görevlendirilen memurlara hizmetlerinin karşılığında, kadroya dayanılarak ay itibariyle ödenen paraya ne ad verilir?",o:["Ücret", "Aylık", "Tazminat", "Ödenek"],c:1,e:""},
+{q:"Niteliği ve çalışma şartları bakımından güç olan işlerde çalışanlara ödenen para aşağıdakilerden hangisidir?",o:["İş riski zammı", "İş güçlüğü zammı", "Mali sorumluluk tazminatı", "Eleman teminindeki güçlük zammı"],c:1,e:""},
+{q:"Hayat ve sağlık için tehlike arz eden hizmetlerde çalışanlara ödenen para aşağıdakilerden hangisidir?",o:["İş güçlüğü zammı", "İş riski zammı", "Eleman teminindeki güçlük zammı", "Mali sorumluluk tazminatı"],c:1,e:""},
+{q:"Temininde, görevde tutulmasında veya belli yerlerde istihdam edilmesinde güçlük bulunan elemanlar için ödenen para aşağıdakilerden hangisidir?",o:["İş güçlüğü zammı", "İş riski zammı", "Eleman teminindeki güçlük zammı", "Mali sorumluluk tazminatı"],c:2,e:""},
+{q:"Sayıştay'a hesap vermekle yükümlü olan saymanlarla vezne açığından sorumlu veznedarlara ödenen paraya ne ad verilir?",o:["İş güçlüğü zammı", "Eleman teminindeki güçlük zammı", "İş riski zammı", "Mali sorumluluk tazminatı"],c:3,e:""},
+{q:"Memurlara aylıkları her ayın kaçında ve nasıl ödenir?",o:["Ayın 1'inde peşin ödenir.", "Ayın 15'inde peşin ödenir.", "Ayın sonunda çalıştıktan sonra ödenir.", "Ayın 15'inde çalıştıktan sonra ödenir."],c:1,e:""},
+{q:"Emekliye ayrılma ve ölüm hallerinde, o aya ait peşin ödenen aylık ile ilgili hangi işlem yapılır?",o:["Tamamı geri alınır.", "Yarısı geri alınır.", "Geri alınmaz.", "Sadece vergisi tahsil edilir."],c:2,e:""},
+{q:"Karı ve kocanın her ikisi de memur iseler, aile yardımı ödeneği kime verilir?",o:["Yarı yarıya paylaştırılır.", "Yalnız kocaya verilir.", "Yalnız kadına verilir.", "Çocuğun velayeti kimdeyse ona verilir."],c:1,e:""},
+{q:"Aile yardımı ödeneklerinin haczedilmesi ve vergiye tabi tutulması hususunda aşağıdaki kurallardan hangisi geçerlidir?",o:["Vergiye tabidir, haczedilemez.", "Vergiye tabi değildir, haczedilebilir.", "Hiçbir vergi ve kesintiye tabi tutulmaksızın ödenir ve borç için haczedilemez.", "Sadece nafaka borcu için haczedilebilir."],c:2,e:""},
+{q:"Devlet memurlarından çocuğu dünyaya gelenlere verilecek olan doğum yardımı ödeneği hesaplanırken hangi gösterge rakamı kullanılır?",o:["1500", "2000", "2500", "3000"],c:2,e:""},
+{q:"Doğum yardımı ödeneği için aşağıdakilerden hangisi doğrudur?",o:["Vergi kesintisine tabidir.", "Ödeme emri aranmaksızın saymanlarca derhal ödenir.", "Sadece memur olan anneye ödenir.", "Yılsonunda toplu ödenir."],c:1,e:""},
+{q:"Devlet memurlarından memur olmayan eşi ölenlere ne kadar ölüm yardımı ödeneği verilir?",o:["En yüksek Devlet memuru aylığı (ek gösterge dahil) tutarında", "Kendi aylığının iki katı tutarında", "En yüksek Devlet memuru aylığının yarısı tutarında", "En yüksek Devlet memuru aylığının iki katı tutarında"],c:0,e:""},
+{q:"Devlet memurlarından ikiden fazla dahi olsa aile yardımı ödeneğine müstahak çocuğu ölenlere ne kadar ölüm yardımı ödeneği verilir?",o:["En yüksek Devlet memuru aylığı (ek gösterge dahil) tutarında", "Kendi aylığı tutarında", "En yüksek Devlet memuru aylığının iki katı tutarında", "Gösterge rakamının katsayıyla çarpımı tutarında"],c:0,e:""},
+{q:"Memurun kendisinin ölümü halinde ölüm yardımı ödeneği kural olarak ne kadardır?",o:["Kendi aylığının iki katı tutarında", "En yüksek Devlet memuru aylığı (ek gösterge dahil) tutarında", "En yüksek Devlet memuru aylığının (ek gösterge dahil) iki katı tutarında", "Dul ve yetim aylığı kadar"],c:2,e:""},
+{q:"Memurun kendisinin ölümü halinde ölüm yardımı ödeneği öncelikle kime verilir?",o:["Sadece eşine", "Sağlığında bildiri ile gösterdiği kimseye", "Çocuklarına", "Ana ve babasına"],c:1,e:""},
+{q:"Memurun kendisinin ölümü halinde, eğer memur sağlığında bildiri ile bir kimse göstermemiş ise ölüm yardımı sırasıyla kimlere ödenir?",o:["Sadece çocuklarına", "Sadece eşine", "Eşine ve çocuklarına, bunlar yoksa ana ve babasına, bunlar da yoksa kardeşlerine", "Ana ve babasına, bunlar yoksa kardeşlerine"],c:2,e:""},
+{q:"Kadın memura doğumdan önce ve doğumdan sonra verilen analık izni süresi toplam ne kadardır?",o:["Toplam 12 hafta", "Toplam 14 hafta", "Toplam 16 hafta", "Toplam 18 hafta"],c:2,e:""},
+{q:"Çoğul gebelik durumunda, doğum öncesi sekiz haftalık analık izni süresine kaç hafta eklenir?",o:["1 hafta", "2 hafta", "3 hafta", "4 hafta"],c:1,e:""},
+{q:"Sağlık durumunun çalışmaya uygun olduğunu tabip raporuyla belgeleyen kadın memur, isteği hâlinde doğumdan önceki kaç haftaya kadar kurumunda çalışabilir?",o:["İki haftaya kadar", "Üç haftaya kadar", "Dört haftaya kadar", "Beş haftaya kadar"],c:1,e:""},
+{q:"Kadın memura, çocuğunu emzirmesi için doğum sonrası analık izni süresinin bitim tarihinden itibaren \"ilk altı ayda\" günde kaç saat süt izni verilir?",o:["1 saat", "1,5 saat", "2 saat", "3 saat"],c:3,e:""},
+{q:"Kadın memura, çocuğunu emzirmesi için \"ikinci altı ayda\" günde kaç saat süt izni verilir?",o:["1 saat", "1,5 saat", "2 saat", "3 saat"],c:1,e:""},
+{q:"Üç yaşını doldurmamış bir çocuğu evlat edinen memurlara, çocuğun teslim edildiği tarihten itibaren ne kadar süre ile evlatlık izni verilir?",o:["Dört hafta", "Altı hafta", "Sekiz hafta", "On hafta"],c:2,e:""},
+{q:"Memurlara, bir yıl içinde toptan veya bölümler hâlinde, mazeretleri sebebiyle amirlerin muvafakati ile kaç gün mazeret izni verilebilir?",o:["5 gün", "7 gün", "10 gün", "15 gün"],c:2,e:""},
+{q:"Mazeret izninde zaruret hâlinde (öğretmenler hariç) memurlara aynı usulle 10 gün daha mazeret izni verilebilir. Ancak bu ikinci kez verilen izin nereden düşülür?",o:["Sonraki yılın mazeret izninden", "Yıllık izinden", "Hastalık izninden", "Şua izninden"],c:1,e:""},
+{q:"Memurlara, en az yüzde 70 oranında engelli ya da süreğen hastalığı olan çocuğunun hastalanması hâlinde, ana veya babadan sadece biri tarafından kullanılması kaydıyla bir yıl içinde toptan veya bölümler hâlinde ne kadar mazeret izni verilir?",o:["5 güne kadar", "7 güne kadar", "10 güne kadar", "15 güne kadar"],c:2,e:""},
+{q:"Memura, eşinin doğum yapması hâlinde, isteği üzerine kaç gün babalık izni verilir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:3,e:""},
+{q:"Memurun kendisinin veya çocuğunun evlenmesi ya da eşinin, çocuğunun, kendisinin veya eşinin ana, baba ve kardeşinin ölümü hâllerinde isteği üzerine kaç gün izin verilir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:2,e:""},
+{q:"Memura, kanser, verem ve akıl hastalığı gibi uzun süreli bir tedaviye ihtiyaç gösteren hastalığı hâlinde, aylık ve özlük hakları korunarak en çok ne kadar hastalık izni verilir?",o:["6 aya kadar", "12 aya kadar", "18 aya kadar", "24 aya kadar"],c:2,e:""},
+{q:"Memura, kanser ve verem dışındaki diğer hastalık hâllerinde en çok ne kadar hastalık izni verilir?",o:["6 aya kadar", "12 aya kadar", "18 aya kadar", "24 aya kadar"],c:1,e:""},
+{q:"Uzun süreli hastalık izinlerinin bitiminden itibaren, sağlık kurulu raporuyla belgelendirilmesi şartıyla memura istekleri üzerine ne kadar aylıksız izin verilebilir?",o:["6 aya kadar", "12 aya kadar", "18 aya kadar", "24 aya kadar"],c:2,e:""},
+{q:"Doğum yapan memura veya eşi doğum yapan memura istekleri üzerine yirmidört aya kadar verilen aylıksız iznin başlangıç tarihi ile ilgili aşağıdakilerden hangisi doğrudur?",o:["Doğum yapan memur için doğum sonrası analık izni süresinin bitiminden itibaren başlar.", "Her iki durum için de bebeğin 1 yaşına girmesinden itibaren başlar.", "Her iki durum için de doğum tarihinden itibaren başlar.", "Eşi doğum yapan memur için babalık izninin bitiminden itibaren başlar."],c:0,e:""},
+{q:"Memura (doğum, askerlik vb. dışında), yıllık izinde esas alınan süreler itibarıyla beş hizmet yılını tamamlamış olması hâlinde memuriyeti boyunca toplam ne kadar aylıksız izin verilebilir?",o:["Altı aya kadar", "Bir yıla kadar", "Bir buçuk yıla kadar", "İki yıla kadar"],c:1,e:""},
+{q:"Memuriyeti boyunca en fazla bir yıla kadar verilen aylıksız iznin, parça parça kullanılmak istenmesi halinde en fazla kaç defada kullandırılması mümkündür?",o:["2 defada", "3 defada", "4 defada", "Sınır yoktur"],c:0,e:""},
+{q:"Memurun bakmakla yükümlü olduğu veya memur refakat etmediği takdirde hayatı tehlikeye girecek ana, baba, eş ve çocukları ile kardeşlerinden birinin ağır bir kaza geçirmesi hâlinde sağlık kurulu raporuyla belgelendirilmesi şartıyla en fazla ne kadar refakat izni verilir?",o:["1 aya kadar", "3 aya kadar", "6 aya kadar", "1 yıla kadar"],c:1,e:""},
+{q:"Üç aya kadar verilen refakat izni, gerektiğinde en fazla ne kadar uzatılabilir?",o:["Bir katına kadar", "İki katına kadar", "Altı aya kadar", "Uzatılamaz"],c:0,e:""},
+{q:"Hizmeti 1 yıldan on yıla kadar (On yıl dahil) olan Devlet memurlarının yıllık izin süresi kaç gündür?",o:["15 gün", "20 gün", "25 gün", "30 gün"],c:1,e:""},
+{q:"Hizmeti on yıldan fazla olan Devlet memurlarının yıllık izin süresi kaç gündür?",o:["20 gün", "25 gün", "30 gün", "40 gün"],c:2,e:""},
+{q:"Yıllık izin sürelerine, zorunlu hallerde gidiş ve dönüş için en çok kaçar gün eklenebilir?",o:["Birer gün", "İkişer gün", "Üçer gün", "Dörder gün"],c:1,e:""},
+{q:"Doğum yapan veya eşi doğum yapan memurlar \"Yarı Zamanlı Çalışma\" hakkını en son hangi tarihe kadar düzenlenmesini talep edebilirler?",o:["Çocuğun 2 yaşını doldurduğu tarihe kadar", "Çocuğun 6 yaşına girdiği tarihe kadar", "Çocuğun mecburi ilköğretim çağının başladığı tarihi takip eden aybaşına kadar", "Çocuğun ilkokulu bitirdiği tarihe kadar"],c:2,e:""},
+{q:"Memura, görevinde ve davranışlarında daha dikkatli olması gerektiğinin yazı ile bildirilmesi hangi disiplin cezasıdır?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:0,e:""},
+{q:"Usulsüz müracaat veya şikayette bulunmak fiili aşağıdaki disiplin cezalarından hangisini gerektirir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:0,e:""},
+{q:"Belirlenen kılık ve kıyafet hükümlerine aykırı davranmak fiili hangi disiplin cezasını gerektirir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Devlet memurluğundan çıkarma"],c:0,e:""},
+{q:"Görevine veya iş sahiplerine karşı kayıtsızlık göstermek veya ilgisiz kalmak fiilinin cezası aşağıdakilerden hangisidir?",o:["Kınama", "Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"Memura, görevinde ve davranışlarında kusurlu olduğunun yazı ile bildirilmesi hangi disiplin cezasıdır?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"Görev sırasında amire hal ve hareketi ile saygısız davranmak fiilinin disiplin cezası aşağıdakilerden hangisidir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"Eşlerinin, reşit olmayan veya mahcur olan çocuklarının kazanç getiren sürekli faaliyetlerini belirlenen sürede kurumuna bildirmemek eyleminin cezası hangisidir?",o:["Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Kınama"],c:3,e:""},
+{q:"Devlete ait resmi belge, araç, gereç ve benzeri eşyayı kaybetmek fiili hangi disiplin cezasını gerektirir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"İş arkadaşlarına, maiyetindeki personele ve iş sahiplerine kötü muamelede bulunmak veya söz/hareketle sataşmak fiillerinin cezası nedir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Devlet memurluğundan çıkarma"],c:1,e:""},
+{q:"Borçlarını kasten ödemeyerek hakkında yasal yollara başvurulmasına neden olmak fiili hangi cezayı gerektirir?",o:["Kınama", "Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:0,e:""},
+{q:"Yetkili olmadığı halde basına, haber ajanslarına veya radyo ve televizyon kurumlarına bilgi veya demeç vermek eyleminin disiplin cezası hangisidir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"Memurun, brüt aylığından 1/30 - 1/8 arasında kesinti yapılması aşağıdaki disiplin cezalarından hangisidir?",o:["Kınama", "Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:2,e:""},
+{q:"Özürsüz olarak bir veya iki gün göreve gelmemek fiilinin karşılığı olan disiplin cezası hangisidir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:2,e:""},
+{q:"Devlete ait resmi belge, araç, gereç ve benzerlerini \"özel menfaat sağlamak için\" kullanmak eyleminin cezası nedir?",o:["Kınama", "Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:2,e:""},
+{q:"Görevle ilgili konularda yükümlü olduğu kişilere yalan ve yanlış beyanda bulunmak fiili hangi cezayı gerektirir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Devlet memurluğundan çıkarma"],c:2,e:""},
+{q:"Görev sırasında amirine \"sözle\" saygısızlık etmek fiilinin cezası aşağıdakilerden hangisidir?",o:["Kınama", "Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:2,e:""},
+{q:"Fiilin ağırlık derecesine göre memurun bulunduğu kademede ilerlemesinin 1 ila 3 yıl durdurulması cezası aşağıdakilerden hangisidir?",o:["Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma"],c:2,e:""},
+{q:"Göreve sarhoş gelmek, görev yerinde alkollü içki içmek fiili hangi disiplin cezasını gerektirir?",o:["Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma"],c:2,e:""},
+{q:"Özürsüz ve kesintisiz 3 - 9 gün göreve gelmemek fiilinin disiplin cezası aşağıdakilerden hangisidir?",o:["Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Uyarma", "Devlet memurluğundan çıkarma"],c:1,e:""},
+{q:"Görevi ile ilgili olarak her ne şekilde olursa olsun çıkar sağlamak fiilinin cezası nedir?",o:["Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Kınama", "Uyarma"],c:1,e:""},
+{q:"Amirine veya maiyetindekilere karşı küçük düşürücü veya aşağılayıcı fiil ve hareketler yapmak eylemi hangi cezayı gerektirir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Uyarma", "Kınama"],c:0,e:""},
+{q:"Görev yeri sınırları içinde herhangi bir yeri toplantı, tören ve benzeri amaçlarla izinsiz kullanmak veya kullandırmak fiilinin cezası aşağıdakilerden hangisidir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:3,e:""},
+{q:"Gerçeğe aykırı rapor ve belge düzenlemek eyleminin disiplin cezası nedir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Uyarma", "Kınama"],c:0,e:""},
+{q:"Ticaret yapmak veya Devlet memurlarına yasaklanan diğer kazanç getirici faaliyetlerde bulunmak fiili hangi cezayı gerektirir?",o:["Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Uyarma"],c:1,e:""},
+{q:"Görevin yerine getirilmesinde dil, ırk, cinsiyet, siyasi düşünce, felsefi inanç, din ve mezhep ayrımı yapmak, kişilerin yarar veya zararını hedef tutan davranışlarda bulunmak fiilinin cezası nedir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Kınama", "Aylıktan kesme"],c:0,e:""},
+{q:"Belirlenen durum ve sürelerde mal bildiriminde bulunmamak fiilinin disiplin cezası aşağıdakilerden hangisidir?",o:["Kınama", "Uyarma", "Kademe ilerlemesinin durdurulması", "Aylıktan kesme"],c:2,e:""},
+{q:"Açıklanması yasaklanan bilgileri açıklamak fiili hangi disiplin cezasını gerektirir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Kınama", "Uyarma"],c:0,e:""},
+{q:"Amirine, maiyetindekilere, iş arkadaşları veya iş sahiplerine hakarette bulunmak veya bunları tehdit etmek eyleminin cezası nedir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Aylıktan kesme", "Kınama"],c:0,e:""},
+{q:"Diplomatik statüsünden yararlanmak suretiyle yurt dışında, haklı bir sebep göstermeksizin ödeme kabiliyetinin üstünde borçlanmak ve borçlarını ödemedeki tutum ve davranışlarıyla Devlet itibarını zedelemek veya zorunlu bir sebebe dayanmaksızın borcunu ödemeden yurda dönmek fiilinin cezası hangisidir?",o:["Devlet memurluğundan çıkarma", "Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Kınama"],c:1,e:""},
+{q:"Verilen görev ve emirleri kasten yapmamak eylemi aşağıdaki cezalardan hangisini gerektirir?",o:["Uyarma", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma"],c:2,e:""},
+{q:"Herhangi bir siyasi parti yararına veya zararına fiilen faaliyette bulunmak fiilinin disiplin cezası nedir?",o:["Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma"],c:2,e:""},
+{q:"Bir daha Devlet memurluğuna atanmamak üzere memurluktan çıkarma cezası aşağıdakilerden hangisidir?",o:["Açığa alınma", "Görevden uzaklaştırma", "İstifa etmiş sayılma", "Devlet memurluğundan çıkarma"],c:3,e:""},
+{q:"İdeolojik veya siyasi amaçlarla kurumların huzur, sükun ve çalışma düzenini bozmak, boykot, işgal, kamu hizmetlerinin yürütülmesini engelleme, işi yavaşlatma ve grev gibi eylemlere katılmak veya bu amaçlarla toplu olarak göreve gelmemek, bunları tahrik ve teşvik etmek veya yardımda bulunmak fiili hangi cezayı gerektirir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Devlet memurluğundan çıkarma", "Kınama"],c:2,e:""},
+{q:"Yasaklanmış her türlü yayını veya siyasi veya ideolojik amaçlı bildiri, afiş, pankart, bant ve benzerlerini basmak, çoğaltmak, dağıtmak veya bunları kurumların herhangi bir yerine asmak veya teşhir etmek eyleminin cezası nedir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Aylıktan kesme", "Uyarma"],c:1,e:""},
+{q:"Siyasi partiye girmek fiilinin disiplin cezası aşağıdakilerden hangisidir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Aylıktan kesme", "Kınama"],c:1,e:""},
+{q:"Özürsüz olarak bir yılda toplam 20 gün göreve gelmemek fiili hangi cezayı gerektirir?",o:["Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Görevden uzaklaştırma"],c:2,e:""},
+{q:"Savaş, olağanüstü hal veya genel afetlere ilişkin konularda amirlerin verdiği görev veya emirleri yapmamak fiilinin cezası nedir?",o:["Devlet memurluğundan çıkarma", "Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Kınama"],c:0,e:""},
+{q:"Amirlerine, maiyetindekilere ve iş sahiplerine fiili tecavüzde bulunmak eylemi aşağıdaki cezalardan hangisini gerektirir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Aylıktan kesme", "Uyarma"],c:1,e:""},
+{q:"Memurluk sıfatı ile bağdaşmayacak nitelik ve derecede yüz kızartıcı ve utanç verici hareketlerde bulunmak fiilinin cezası hangisidir?",o:["Aylıktan kesme", "Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Kınama"],c:2,e:""},
+{q:"Yetki almadan gizli bilgileri açıklamak fiilinin disiplin cezası nedir?",o:["Devlet memurluğundan çıkarma", "Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Uyarma"],c:0,e:""},
+{q:"Siyasi ve ideolojik eylemlerden arananları görev mahallinde gizlemek eyleminin cezası aşağıdakilerden hangisidir?",o:["Devlet memurluğundan çıkarma", "Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Kınama"],c:0,e:""},
+{q:"Yurt dışında Devletin itibarını düşürecek veya görev haysiyetini zedeleyecek tutum ve davranışlarda bulunmak fiilinin cezası nedir?",o:["Kademe ilerlemesinin durdurulması", "Devlet memurluğundan çıkarma", "Aylıktan kesme", "Uyarma"],c:1,e:""},
+{q:"5816 sayılı Atatürk Aleyhine İşlenen Suçlar Hakkındaki Kanuna aykırı fiilleri işlemek hangi cezayı gerektirir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Devlet memurluğundan çıkarma", "Kınama"],c:2,e:""},
+{q:"Terör örgütleriyle eylem birliği içerisinde olmak, bu örgütlere yardım etmek, kamu imkan ve kaynaklarını bu örgütleri desteklemeye yönelik kullanmak ya da kullandırmak, bu örgütlerin propagandasını yapmak eyleminin cezası aşağıdakilerden hangisidir?",o:["Kademe ilerlemesinin durdurulması", "Aylıktan kesme", "Görevden uzaklaştırma", "Devlet memurluğundan çıkarma"],c:3,e:""},
+{q:"Disiplin cezası verilmesine sebep olmuş bir fiil veya halin, cezaların özlük dosyasından silinmesine ilişkin süre içinde tekerrüründe hangi ceza uygulanır?",o:["Aynı ceza tekrar verilir.", "Bir derece ağır olan ceza uygulanır.", "Görevine son verilir.", "Disiplin kuruluna sevk edilir."],c:1,e:""},
+{q:"Aynı derecede cezayı gerektiren fakat ayrı fiil veya haller nedeniyle verilen disiplin cezalarının üçüncü uygulamasında hangi ceza verilir?",o:["İki katı ceza uygulanır.", "Bir derece ağır olan ceza verilir.", "Memurluktan çıkarılır.", "Savcılığa suç duyurusunda bulunulur."],c:1,e:""},
+{q:"Geçmiş hizmetleri sırasındaki çalışmaları olumlu olan ve ödül veya başarı belgesi alan memurlar için verilecek cezalarda hangi işlem tesis edilebilir?",o:["Ceza affedilir.", "Ceza ertelenir.", "Bir derece hafif olanı uygulanabilir.", "Disiplin kurulu kararıyla ceza verilmez."],c:2,e:""},
+{q:"Yükselebilecekleri kadroların son kademelerinde bulunan Devlet memurlarının, kademe ilerlemesinin durdurulması cezasının verilmesini gerektiren hallerde brüt aylıklarından ne kadar kesinti yapılır?",o:["1/8 - 1/4 arası", "1/30 - 1/8 arası", "1/4 - 1/2 arası", "Tamamı kesilir"],c:2,e:""},
+{q:"Yükselebilecekleri kadroların son kademelerinde bulunup da kademe ilerlemesinin durdurulması yerine brüt aylıklarından kesinti yapılan memurların, söz konusu durumları tekerrür ederse haklarında hangi işlem yapılır?",o:["Aylıklarından yarı oranında kesinti yapılır.", "Devlet memurluğundan çıkarma cezası verilir.", "Görevlerine son verilir.", "Ücretsiz izne ayrılır."],c:2,e:""},
+{q:"657 sayılı Kanuna göre uyarma, kınama ve aylıktan kesme cezalarını kim verir?",o:["Disiplin kurulları", "Disiplin amirleri", "Yüksek disiplin kurulları", "Atamaya yetkili amir"],c:1,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezasını kim verir?",o:["Doğrudan disiplin amirleri", "İl disiplin kurulu", "Kurum disiplin kurulunun kararı alındıktan sonra, atamaya yetkili amirler", "Yüksek disiplin kurulu"],c:2,e:""},
+{q:"İl disiplin kurullarının kararlarına dayanan kademe ilerlemesinin durdurulması cezalarını illerde kim verir?",o:["Vali", "Kaymakam", "İl Müdürü", "Bakan"],c:0,e:""},
+{q:"Devlet memurluğundan çıkarma cezası kim tarafından verilir?",o:["Disiplin amirleri", "Atamaya yetkili amir", "Disiplin kurulu", "Amirlerin bu yoldaki isteği üzerine, memurun bağlı bulunduğu kurumun yüksek disiplin kurulu kararı ile"],c:3,e:""},
+{q:"Uyarma, kınama, aylıktan kesme ve kademe ilerlemesinin durdurulması cezalarında, fiilin öğrenildiği tarihten itibaren kaç ay içinde disiplin soruşturmasına başlanmadığı takdirde disiplin cezası verme yetkisi zamanaşımına uğrar?",o:["1 ay", "3 ay", "6 ay", "12 ay"],c:0,e:""},
+{q:"Devlet memurluğundan çıkarma cezasında amirin fiili öğrendiği tarihten itibaren kaç ay içinde disiplin soruşturmasına başlanmadığı takdirde disiplin cezası verme yetkisi zamanaşımına uğrar?",o:["1 ay", "3 ay", "6 ay", "12 ay"],c:2,e:""},
+{q:"Disiplin cezasını gerektiren fiil ve hallerin işlendiği tarihten itibaren ne kadar süre geçtikten sonra disiplin cezası verilemez?",o:["6 ay", "1 yıl", "2 yıl", "5 yıl"],c:2,e:""},
+{q:"Disiplin amirleri uyarma, kınama ve aylıktan kesme cezalarını, soruşturmanın tamamlandığı günden itibaren en geç kaç gün içinde vermek zorundadırlar?",o:["7 gün", "10 gün", "15 gün", "30 gün"],c:2,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezasını gerektiren hallerde soruşturma dosyası en geç kaç gün içinde yetkili disiplin kuruluna tevdi edilir?",o:["7 gün", "15 gün", "30 gün", "45 gün"],c:1,e:""},
+{q:"Disiplin kurulu dosyayı aldıktan sonra kaç gün içinde kararını bildirir?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"Yüksek disiplin kurulları kendilerine intikal eden Devlet memurluğundan çıkarma cezası teklifini en geç ne kadar süre içinde karara bağlar?",o:["1 ay", "3 ay", "6 ay", "1 yıl"],c:2,e:""},
+{q:"Devlet memuru hakkında savunma hakkı tanınmadan disiplin cezası verilebilir mi?",o:["Valinin izniyle verilebilir.", "Disiplin amiri uygun görürse verilebilir.", "Sadece kınama cezası verilebilir.", "Verilemez."],c:3,e:""},
+{q:"Soruşturmayı yapanın veya yetkili disiplin kurulunun tayin edeceği süre içinde savunmasını yapmayan memur için hangi durum geçerli olur?",o:["Suçunu kabul etmiş sayılır.", "Savunma süresi kendiliğinden uzar.", "Savunma hakkından vazgeçmiş sayılır.", "Doğrudan ihraç edilir."],c:2,e:""},
+{q:"Memura savunma yapması için verilecek asgari süre kaç günden az olamaz?",o:["3 gün", "5 gün", "7 gün", "15 gün"],c:2,e:""},
+{q:"Disiplin cezaları hangi tarihten itibaren hüküm ifade eder ve derhal uygulanır?",o:["İtiraz süresi bittikten sonra", "Verildiği tarihten itibaren", "Kararın tebliğ edildiği gün", "Disiplin kurulunun onayladığı tarihte"],c:1,e:""},
+{q:"Disiplin cezalarından \"aylıktan kesme\" cezası hangi tarihte uygulanır?",o:["Verildiği tarihte", "Kararın tebliğ edildiği gün", "Cezanın veriliş tarihini takip eden aybaşında", "İtirazın reddedildiği tarihte"],c:2,e:""},
+{q:"Devlet memurlarına verilen disiplin cezaları memurun hangi dosyasına işlenir?",o:["Sağlık dosyası", "Özlük dosyası", "Gizli sicil dosyası", "Kurum arşivi"],c:1,e:""},
+{q:"Uyarma ve kınama cezalarının özlük dosyasından silinmesi için cezanın uygulanmasından itibaren kaç sene geçmesi gerekir?",o:["3 sene", "5 sene", "10 sene", "15 sene"],c:1,e:""},
+{q:"Aylıktan kesme ve kademe ilerlemesinin durdurulması cezalarının özlük dosyasından silinmesi için cezanın uygulanmasından itibaren kaç sene geçmesi gerekir?",o:["3 sene", "5 sene", "10 sene", "15 sene"],c:2,e:""},
+{q:"Gerekli süreleri tamamlayan Devlet memurları disiplin cezalarının özlük dosyasından silinmesi için kime başvurabilirler?",o:["Disiplin Kuruluna", "Yüksek Disiplin Kuruluna", "Disiplin Amirine", "Atamaya Yetkili Amire"],c:3,e:""},
+{q:"Uyarma, kınama ve aylıktan kesme cezalarına karşı itiraz mercii aşağıdakilerden hangisidir?",o:["Yüksek Disiplin Kurulu", "Disiplin Kurulu", "Atamaya Yetkili Amir", "İdare Mahkemesi"],c:1,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezasına karşı itiraz mercii aşağıdakilerden hangisidir?",o:["Disiplin Kurulu", "Yüksek Disiplin Kurulu", "Disiplin Amiri", "İdare Mahkemesi"],c:1,e:""},
+{q:"Disiplin amirleri veya disiplin kurulları tarafından verilen disiplin cezalarına karşı itiraz süresi, kararın ilgiliye tebliği tarihinden itibaren kaç gündür?",o:["5 gün", "7 gün", "10 gün", "15 gün"],c:1,e:""},
+{q:"Süresi içinde itiraz edilmeyen disiplin cezaları hakkında hangi hukuki sonuç doğar?",o:["Cezalar kendiliğinden iptal olur.", "Disiplin kuruluna sevk edilir.", "Kesinleşir.", "İtiraz süresi bir hafta daha uzar."],c:2,e:""},
+{q:"İtiraz mercileri olan disiplin ve yüksek disiplin kurulları, itiraz dilekçesi ile eklerini aldıkları tarihten itibaren en fazla kaç gün içinde kararlarını vermek zorundadır?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"İtiraz mercilerince itirazın kabulü hâlinde, disiplin amirleri karar hakkında nasıl bir tasarrufta bulunabilirler?",o:["Sadece cezayı hafifletebilirler.", "Sadece cezayı tamamen kaldırabilirler.", "Cezayı hafifletebilir veya tamamen kaldırabilirler.", "Kararı değiştiremezler, sadece uygulamayı ertelerler."],c:2,e:""},
+{q:"Devlet kamu hizmetlerinin gerektirdiği hallerde, görevi başında kalmasında sakınca görülecek Devlet memurları hakkında alınan ihtiyati tedbire ne ad verilir?",o:["Memurluktan çıkarma", "Aylıktan kesme", "Açığa alma", "Görevden uzaklaştırma"],c:3,e:""},
+{q:"Aşağıdakilerden hangisi görevden uzaklaştırma tedbiri almaya yetkili makamlardan biri değildir?",o:["Atamaya yetkili amirler", "Bakanlık ve genel müdürlük müfettişleri", "İllerde valiler, ilçelerde kaymakamlar", "Disiplin Kurulu Başkanları"],c:3,e:""},
+{q:"İlçelerde görevden uzaklaştırma yetkisini kullanan kaymakamlar, bu durumu derhal kime bildirmek zorundadırlar?",o:["İçişleri Bakanlığına", "Valiliğe", "Atamaya yetkili amire", "İlgili Bakanlığa"],c:1,e:""},
+{q:"Görevden uzaklaştırılan veya görevinden uzak kalan memurlara bu süre içinde aylıklarının ne kadarı ödenir?",o:["Yarısı (1/2)", "Üçte ikisi (2/3)", "Dörtte üçü (3/4)", "Tamamı"],c:1,e:""},
+{q:"Görevden uzaklaştırılan memurun, kanunda sayılan sosyal hak ve yardımlardan yararlanma durumu aşağıdakilerden hangisinde doğru verilmiştir?",o:["Hiçbirinden yararlanamazlar.", "Sadece aile yardımından yararlanırlar.", "Sosyal hak ve yardımlardan yararlanmaya devam ederler.", "Sosyal hakları yarı oranında kesilir."],c:2,e:""},
+{q:"Disiplin soruşturması nedeniyle görevden uzaklaştırma tedbiri en çok ne kadar süre devam edebilir?",o:["1 ay", "2 ay", "3 ay", "6 ay"],c:1,e:""},
+{q:"Disiplin soruşturması nedeniyle uygulanan görevden uzaklaştırma süresi sonunda memur hakkında bir karar verilmemişse hangi işlem tesis edilir?",o:["Süre iki ay daha uzatılır.", "Memur görevine başlatılır.", "Memuriyetine son verilir.", "Aylığı tamamen kesilir."],c:1,e:""},
+{q:"Görevden uzaklaştırma tedbiri memurun hakkında \"ceza kovuşturması yapılması nedeniyle\" alınmışsa, bu tedbir ilgili makam tarafından en geç kaç ayda bir gözden geçirilerek karara bağlanır?",o:["Her ay", "2 ayda bir", "3 ayda bir", "6 ayda bir"],c:1,e:""},
+{q:"Hakkında görevden uzaklaştırma tedbiri alınan memurun, soruşturma veya yargılama sonunda beraat etmesi veya takipsizlik kararı alması halinde kesilmiş olan aylık (1/3) kısmı için ne işlem yapılır?",o:["Hazineye irat kaydedilir.", "Kesilen kısım memura ödenmez.", "Kesilen kısmın yarısı ödenir.", "Kesilen kısım memura ödenir."],c:3,e:""},
+{q:"Memurlar hakkındaki görevden uzaklaştırma tedbiri, memurun yargılamaya konu olan fiilinin memurluğuna engel bir durum yaratmaması ihtimalinde hangi merci tarafından kaldırılabilir?",o:["İdare mahkemesi", "Disiplin kurulu", "Atamaya yetkili amir", "Danıştay"],c:2,e:""},
+{q:"Görevden uzaklaştırma tedbirini alan amir, bu tedbirin kaldırılması şartları oluştuğunda ne yapmak zorundadır?",o:["Valinin onayını beklemek zorundadır.", "Derhal bu tedbiri kaldırmak zorundadır.", "Tedbiri bir ay daha devam ettirebilir.", "Disiplin kuruluna sevk etmek zorundadır."],c:1,e:""},
+{q:"657 sayılı Kanuna göre Devlet memurlarının haftalık çalışma süresi genel olarak kaç saattir?",o:["35 saat", "40 saat", "45 saat", "48 saat"],c:1,e:""},
+{q:"Haftalık çalışma süresi olan 40 saat, kurumlarca kural olarak hangi günlerin tatil olması esasına göre düzenlenir?",o:["Sadece Pazar", "Cuma ve Cumartesi", "Cumartesi ve Pazar", "Kurumun inisiyatifine bırakılmış herhangi iki gün"],c:2,e:""},
+{q:"Günlük çalışmanın başlama ve bitme saatleri ile öğle dinlenme süresi merkezde kim tarafından tespit olunur?",o:["İlgili Bakan", "Cumhurbaşkanı", "İçişleri Bakanı", "Devlet Personel Başkanlığı"],c:1,e:""},
+{q:"İllerde günlük çalışmanın başlama ve bitme saatleri ile öğle dinlenme süresi kim tarafından tespit olunur?",o:["Kaymakam", "İl İdare Kurulu", "Vali", "Belediye Başkanı"],c:2,e:""},
+{q:"Engelli memurların çalışma saatleri ve süreleri, engelleri ve iklim şartları dikkate alınarak kim tarafından belirlenir?",o:["Sağlık Bakanlığı", "İlgili kurumlar", "Aile ve Sosyal Hizmetler Bakanlığı", "Valilikler"],c:1,e:""},
+{q:"Günün yirmi dört saatinde devamlılık gösteren hizmetlerde çalışan Devlet memurlarının çalışma saatleri ve şekilleri kim tarafından düzenlenir?",o:["Cumhurbaşkanı", "Kurumlarınca", "Valilik", "İçişleri Bakanlığı"],c:1,e:""},
+{q:"Kadın memurlara, tabip raporunda belirtilmesi hâlinde hamileliğin kaçıncı haftasından önce gece nöbeti ve gece vardiyası görevi verilemez?",o:["12 nci haftasından itibaren", "20 nci haftasından itibaren", "24 üncü haftasından itibaren", "28 inci haftasından itibaren"],c:2,e:""},
+{q:"Doğum yapan kadın memurlara, doğum tarihinden itibaren ne kadar süreyle gece nöbeti ve gece vardiyası görevi verilemez?",o:["6 ay", "1 yıl", "2 yıl", "3 yıl"],c:2,e:""},
+{q:"Engelli memurlara hangi durumda gece nöbeti ve gece vardiyası görevi verilebilir?",o:["Amirlerinin gerekli gördüğü durumlarda", "Kurumda personel eksikliği olduğunda", "Kendi istekleri hâlinde", "Kesinlikle verilemez"],c:2,e:""},
+{q:"Görevli oldukları kurumlarda olağanüstü gayret ve çalışmaları ile emsallerine göre başarılı görev yapmak suretiyle kamu kaynağında önemli ölçüde tasarruf sağlayan memurlara aşağıdaki belgelerden hangisi verilir?",o:["Takdirname", "Başarı Belgesi", "Teşekkür Belgesi", "Şilt"],c:1,e:""},
+{q:"Merkeze bağlı kurumlarda çalışan memurlara Başarı Belgesi kim tarafından verilebilir?",o:["Şube Müdürü", "Daire Başkanı", "Genel Müdür", "Bakan"],c:3,e:""},
+{q:"İllerde görevli memurlara Başarı Belgesi kim tarafından verilebilir?",o:["Vali", "İl Müdürü", "Bölge Müdürü", "Kaymakam"],c:0,e:""},
+{q:"İlçelerde görevli memurlara Başarı Belgesi kim tarafından verilebilir?",o:["İlçe Müdürü", "Belediye Başkanı", "Kaymakam", "Vali Yardımcısı"],c:2,e:""},
+{q:"Üç defa başarı belgesi alan memurlara aşağıdakilerden hangisi verilir?",o:["Bir derece yükselmesi", "Çift maaş ikramiye", "Üstün Başarı Belgesi", "Takdirname"],c:2,e:""},
+{q:"Üstün başarı belgesi verilenlere, merkeze bağlı kurumlarda kimin uygun görmesi ile ödül verilebilir?",o:["Cumhurbaşkanı", "Bağlı veya ilgili bakan", "Kurum başkanı", "Genel Müdür"],c:1,e:""},
+{q:"Üstün başarı belgesi verilenlere, illerde kimin uygun görmesi ile ödül verilebilir?",o:["Bakan", "Kaymakam", "Vali", "İl İdare Kurulu"],c:2,e:""},
+{q:"Üstün başarı belgesi alanlara verilebilecek ödülün tutarı en fazla ne kadardır?",o:["Kendi aylığının iki katına kadar", "En yüksek Devlet memuru aylığının %200 ’üne kadar", "Asgari ücretin üç katına kadar", "Brüt aylığının %100 ’üne kadar"],c:1,e:""},
+{q:"Bir malî yıl içinde ödüllendirileceklerin sayısı, kurumun yılbaşındaki dolu kadro mevcudunun kural olarak binde kaçını geçemez?",o:["Binde 5'ini", "Binde 10'unu", "Binde 20'sini", "Binde 50'sini"],c:1,e:""},
+{q:"Memurların, başarı, yeterlik ve ehliyetlerinin tespitinde, kademe ilerlemelerinde, derece yükselmelerinde veya hizmetle ilişkilerinin kesilmesinde öncelikle neye bakılır?",o:["Sicil amirinin kanaatine", "Özlük dosyasına", "Mal bildirim formuna", "Sağlık raporlarına"],c:1,e:""},
+{q:"Memurlar, kurumlarıyla ilgili resmi belge, araç ve gereçleri yetki verilen mahaller dışına çıkarabilirler mi?",o:["Sadece mesai saatleri dışında çıkarabilirler.", "Amirinden sözlü izin alarak çıkarabilirler.", "Görev amacıyla dahi olsa kesinlikle çıkaramazlar.", "Yetki verilen mahaller dışına çıkaramazlar."],c:3,e:""},
+{q:"Devlet memurları, görevleri sona erdiği zaman kendilerine teslim edilen resmi belge, araç ve gereçleri ne yapmak zorundadırlar?",o:["Arşive kaldırmak", "Yerine atanan memura şahsen teslim etmek", "Kuruma iade etmek", "İmha tutanağı ile yok etmek"],c:2,e:""},
+{q:"Kurumların memurlarını mesleki bilgilerini artırmak amacıyla yetiştirmesi hususu Kanunda hangi isimle adlandırılmıştır?",o:["Adaylık Eğitimi", "Oryantasyon Eğitimi", "Hizmet İçi Eğitim", "İntibak Eğitimi"],c:2,e:""},
+{q:"Memurların kurumlarınca karşılanacak giderleri arasında aşağıdakilerden hangisi sayılmamıştır?",o:["Yurt dışında vefat eden memurun cenaze giderleri", "Görev yolculuğunda hastalanan memurun tedavi giderleri", "Görev mahalline mutat vasıta ile gidiş geliş yol giderleri", "Yurt içinde görevdeyken vefat eden memurun cenazesinin nakil giderleri"],c:2,e:""},
+{q:"Memurların kanuni izin, geçici görev, disiplin cezası uygulaması veya görevden uzaklaştırma nedenleriyle işlerinden geçici olarak ayrılmaları hâlinde yerlerine kurum içinden, diğer kurumlardan veya açıktan atanan kişiye ne ad verilir?",o:["Müşavir", "Vekil", "Sözleşmeli personel", "Geçici görevli"],c:1,e:""},
+{q:"Devlet memurlarına kural olarak ikinci bir görev verilebilir mi?",o:["Amirinin izniyle verilebilir.", "Her durumda verilebilir.", "Kendi rızası varsa verilebilir.", "Kanunlarda belirtilen istisnalar dışında verilemez."],c:3,e:""},
+{q:"Kadrosu kaldırılan memurlar, kendi kurumlarında niteliklerine uygun bir kadroya en geç ne kadar süre içinde atanırlar?",o:["1 ay", "3 ay", "6 ay", "1 yıl"],c:2,e:""},
+{q:"Devlet memurluğundan kendi istekleriyle çekilmiş (istifa etmiş) olanlar, boş kadro bulunmak ve sınıfın niteliklerini taşımak şartıyla en fazla kaç defa yeniden memurluğa atanabilirler?",o:["1 defa", "2 defa", "3 defa", "Sınır yoktur"],c:1,e:""},
+{q:"Devlet memurluğundan çekilmek (istifa etmek) isteyen bir memur, yerine atanan kimse gelmezse veya yerine bir vekil atanmazsa en fazla ne kadar süre bekledikten sonra üstüne haber vererek görevini bırakabilir?",o:["15 gün", "1 ay", "2 ay", "3 ay"],c:1,e:""},
+{q:"Çekilmek isteyen memur, olağanüstü bir mazeretle çekiliyorsa, yerine atanan kimsenin gelmesini veya bir ay süreyi beklemek zorunda mıdır?",o:["Evet, bir ay beklemek zorundadır.", "Yerine kişi atanana kadar beklemek zorundadır.", "Hayır, üstüne haber vermek şartıyla bir ay kaydına tabi olmadan görevini bırakabilir.", "Sadece mülki amirin izniyle hemen bırakabilir."],c:2,e:""},
+{q:"Olağanüstü hâl, seferberlik ve savaş hâllerinde veya genel hayata müessir afetlere uğrayan yerlerdeki Devlet memurları, yerine atanacaklar gelip işe başlamadıkça görevlerini bırakabilirler mi?",o:["1 ay bekledikten sonra bırakabilirler.", "Üstlerine haber vererek bırakabilirler.", "Hiçbir surette görevlerini bırakamazlar.", "Geçerli bir mazeretleri varsa bırakabilirler."],c:2,e:""},
+{q:"Usulüne uygun olarak memuriyetten çekilenler (istifa edenler), çekilme tarihinden itibaren ne kadar süre geçmeden yeniden Devlet memurluğuna atanamazlar?",o:["3 ay", "6 ay", "1 yıl", "2 yıl"],c:1,e:""},
+{q:"Yerine atanan kimse gelmeden veya yerine bir vekil atanmadan, bir aylık bekleme süresine uymadan görevini bırakanlar (usulsüz istifa edenler), ne kadar süreyle yeniden Devlet memurluğuna atanamazlar?",o:["6 ay", "1 yıl", "2 yıl", "3 yıl"],c:1,e:""},
+{q:"Devir ve teslim ile yükümlü olup bu işlemlerin sonuna kadar görevlerini bırakmamaları gereken memurlardan, bu yükümlülüğe uymadan görevinden ayrılanlar ne kadar süreyle yeniden Devlet memurluğuna atanamazlar?",o:["1 yıl", "2 yıl", "3 yıl", "Hiçbir surette atanamazlar"],c:2,e:""},
+{q:"Olağanüstü hâl, seferberlik ve savaş hâllerinde veya afet bölgelerinde, yerine atanacaklar gelip işe başlamadan görevini bırakanlar ne kadar süreyle yeniden Devlet memurluğuna atanamazlar?",o:["1 yıl", "3 yıl", "5 yıl", "Hiçbir surette atanamazlar"],c:3,e:""},
+{q:"Muvazzaf askerlik görevini ifa etmek için memuriyetten ayrılanlar, terhis tarihinden itibaren en geç kaç gün içinde kurumlarına başvurmak zorundadırlar?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"Askerlik görevini tamamlayıp süresi içinde kurumuna başvuran memurları, kurumları en fazla kaç gün içinde göreve başlatmak zorundadır?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"Emekli olan Devlet memurları, kanunlarda yazılı haller dışında yeniden memurluğa atanabilirler mi?",o:["Atanabilirler.", "Bakan onayı ile atanabilirler.", "Sadece sözleşmeli atanabilirler.", "Atanamazlar."],c:3,e:""},
+{q:"Devlet memurunun kademe ilerlemesi yapabilmesi için bulunduğu kademede en az ne kadar çalışmış olması gerekir?",o:["1 yıl", "2 yıl", "3 yıl", "4 yıl"],c:0,e:""},
+{q:"Kademe ilerlemesi yapabilmek için memurun bulunduğu derecede ilerleyebileceği bir kademenin bulunması şart mıdır?",o:["Hayır, şart değildir.", "Kurum amirinin inisiyatifindedir.", "Evet, bulunması şarttır.", "Sadece üst düzey memurlar için şarttır."],c:2,e:""},
+{q:"Derece yükselmesi yapılabilmesi için memurun üst derecelerden boş bir kadronun bulunması şartı aranır mı?",o:["Sadece yönetici kadroları için aranır.", "Şart aranmaz.", "Sınavla yükselmelerde aranmaz.", "Evet, üst derecelerden boş bir kadronun bulunması şarttır."],c:3,e:""},
+{q:"Derece yükselmesi için memurun bulunduğu derecede en az ne kadar süre çalışmış olması gereklidir?",o:["1 yıl", "2 yıl", "3 yıl", "5 yıl"],c:2,e:""},
+{q:"Derece yükselmesi için memurun bulunduğu derecenin hangi kademesinde bulunması şarttır?",o:["1. kademesinde", "2. kademesinde", "3. kademesinde", "Son kademesinde"],c:2,e:""},
+{q:"Son sekiz yıl içinde herhangi bir disiplin cezası almayan memurlara kademe ilerlemesi hususunda nasıl bir ödüllendirme yapılır?",o:["İki kademe ilerlemesi uygulanır.", "Aylıkla ödüllendirilir.", "Bir kademe ilerlemesi uygulanır.", "Erken derece yükselmesi hakkı verilir."],c:2,e:""},
+{q:"Memurların liyakat ve kariyer ilkeleri çerçevesinde, hizmet gerekleri ve personel planlaması esas alınarak aynı kurumun başka yerlerdeki kadrolarına atanması uygulamasına ne ad verilir?",o:["Kurumlar arası nakil", "Yer değiştirme suretiyle atanma", "Görevlendirme", "Becayiş"],c:1,e:""},
+{q:"Yer değiştirme suretiyle atanmaya tabi memurun atandığı yerde eşinin atanacağı teşkilatın bulunmaması ya da niteliklerine uygun münhal bir görev bulunmaması halinde, eşe kendi kurumu tarafından en çok ne kadar süreyle aylıksız izin verilebilir?",o:["Eşinin görev süresi ile sınırlı olarak (En çok 4 yıla kadar)", "1 yıla kadar", "2 yıla kadar", "Hiçbir surette aylıksız izin verilmez"],c:0,e:""},
+{q:"Aynı kurumun başka başka yerlerde bulunan aynı sınıftaki memurlarının karşılıklı yer değiştirme suretiyle atanmalarını (becayiş) isteyebilmeleri için aşağıdakilerden hangisinin onayı şarttır?",o:["Disiplin Kurulunun", "Atamaya Yetkili Amirlerin", "Valinin", "İlgili Bakanlığın"],c:1,e:""},
+{q:"Memurların 657 sayılı Kanuna tabi kurumlar arasında, memuriyet sınıfı değişerek veya değişmeyerek naklen atanabilmesi için aşağıdakilerden hangisi gereklidir?",o:["Sınav kazanmaları", "Sadece memurun dilekçesi", "Kurumların muvafakati", "Cumhurbaşkanı onayı"],c:2,e:""},
+{q:"Yabancı memleketlerin resmî kurumlarında görev almak isteyen memurlara, Cumhurbaşkanı kararı ile en çok kaç yıla kadar aylıksız izin verilebilir?",o:["3 yıla kadar", "5 yıla kadar", "10 yıla kadar", "21 yıla kadar"],c:2,e:""},
+{q:"Uluslararası kuruluşlarda görev almak isteyen memurlara en çok kaç yıla kadar aylıksız izin verilebilir?",o:["5 yıla kadar", "10 yıla kadar", "15 yıla kadar", "21 yıla kadar"],c:3,e:""},
+{q:"Bilgilerini artırmak üzere şahsen özel burs sağlayan ve bu burstan istifade etmesi için kendilerine aylıksız izin verilen memurların izin süresi kural olarak en çok ne kadardır?",o:["6 ay", "1 yıl", "2 yıl", "4 yıl"],c:2,e:""},
+{q:"Barışta ve seferde muvazzaflık hizmeti dışında eğitim ve manevra maksadıyla silah altına alınan memurların bu süre içindeki hakları nasıldır?",o:["Aylıksız izinli sayılırlar", "Aylıklı izinli sayılırlar", "Yarı aylıklı izinli sayılırlar", "Memuriyetleri dondurulur"],c:1,e:""},
+{q:"Bir görevin memurlar eliyle vekâleten yürütülmesi halinde, vekâlet görevinin fiilen ne kadar süreyi aşması durumunda vekâlet aylığı ödenmeye başlanır?",o:["15 günü", "1 ayı", "2 ayı", "3 ayı"],c:3,e:""},
+{q:"Hizmeti 1 yıldan 10 yıla kadar (10 yıl dâhil) olan Devlet memurlarının yıllık izin süresi kaç gündür?",o:["15 gün", "20 gün", "25 gün", "30 gün"],c:1,e:""},
+{q:"Hizmeti 10 yıldan fazla olan Devlet memurlarının yıllık izin süresi kaç gündür?",o:["20 gün", "25 gün", "30 gün", "40 gün"],c:2,e:""},
+{q:"Birbirini izleyen iki yılın izni bir arada verilebilir mi?",o:["Verilemez, her yılın izni o yıl içinde kullanılmalıdır.", "Ancak mazeret izniyle birleştirilerek verilebilir.", "Evet, verilebilir.", "Sadece emekliliğe hak kazanmış memurlara verilebilir."],c:2,e:""},
+{q:"Cari yıl ile bir önceki yıl hariç, önceki yıllara ait olup da kullanılmayan yıllık izin haklarına ne olur?",o:["Emeklilik süresine eklenir.", "Ücret olarak ödenir.", "Düşer.", "Sonraki yıllara devredilir."],c:2,e:""},
+{q:"Kadın memura, doğumdan önce kaç hafta ve doğumdan sonra kaç hafta olmak üzere toplam analık izni verilir?",o:["Doğumdan önce 4, doğumdan sonra 4 (Toplam 8 hafta)", "Doğumdan önce 6, doğumdan sonra 6 (Toplam 12 hafta)", "Doğumdan önce 8, doğumdan sonra 8 (Toplam 16 hafta)", "Doğumdan önce 10, doğumdan sonra 10 (Toplam 20 hafta)"],c:2,e:""},
+{q:"Çoğul gebelik (ikiz, üçüz vb.) durumunda doğum öncesi analık izni süresine kaç hafta eklenir?",o:["1 hafta", "2 hafta", "3 hafta", "4 hafta"],c:1,e:""},
+{q:"Beklenen doğum tarihinden kaç hafta öncesine kadar kurumunda çalışabileceği tabip raporuyla belgelendirilen memur, isteği hâlinde bu tarihe kadar çalışabilir?",o:["2 hafta öncesine kadar", "3 hafta öncesine kadar", "4 hafta öncesine kadar", "5 hafta öncesine kadar"],c:1,e:""},
+{q:"Doğum öncesinde kullanılan veya kullanılamayan analık izni süreleri hangi durumlarda doğum sonrası analık izni süresine eklenir?",o:["Hiçbir surette eklenmez", "Kurum amirinin inisiyatifiyle eklenir", "Kadın memurun doğum öncesi çalışması veya erken doğum yapması halinde eklenir", "Sadece çoğul gebeliklerde eklenir"],c:2,e:""},
+{q:"Eşi doğum yapan Devlet memuruna, isteği üzerine kaç gün babalık izni verilir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:3,e:""},
+{q:"Memura, kendisinin veya çocuğunun evlenmesi durumunda isteği üzerine kaç gün izin verilir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:2,e:""},
+{q:"Memura, eşinin, çocuğunun, kendisinin veya eşinin ana, baba ve kardeşinin ölümü hâllerinde isteği üzerine kaç gün izin verilir?",o:["3 gün", "5 gün", "7 gün", "10 gün"],c:2,e:""},
+{q:"Belirtilen mazeret sebepleri (doğum, evlilik, ölüm) dışında, amirlerin takdiriyle memura bir yıl içinde toptan veya parça parça en fazla kaç gün mazeret izni verilebilir?",o:["5 gün", "10 gün", "15 gün", "20 gün"],c:1,e:""},
+{q:"Kadın memura, çocuğunu emzirmesi için doğum sonrası analık izni süresinin bitim tarihinden itibaren ilk altı ayda günde kaç saat süt izni verilir?",o:["1 saat", "1,5 saat", "3 saat", "4 saat"],c:2,e:""},
+{q:"Kadın memura, çocuğunu emzirmesi için doğum sonrası analık izni süresinin bitim tarihinden itibaren ikinci altı ayda günde kaç saat süt izni verilir?",o:["1 saat", "1,5 saat", "2 saat", "3 saat"],c:1,e:""},
+{q:"Memura, 5 hizmet yılını tamamlamış olması şartıyla memuriyeti boyunca en fazla ne kadar süreyle aylıksız izin verilebilir?",o:["6 ay", "1 yıl", "2 yıl", "3 yıl"],c:1,e:""},
+{q:"Memurun bakmakla yükümlü olduğu veya memur refakat etmediği takdirde hayatı tehlikeye girecek ana, baba, eş ve çocukları ile kardeşlerinden birinin ağır kaza geçirmesi veya tedavisi uzun süren bir hastalığının bulunması hâllerinde (sağlık kurulu raporuyla belgelendirilmek şartıyla), en fazla ne kadar süreyle aylıksız izin verilebilir?",o:["6 aya kadar", "12 aya kadar", "18 aya kadar", "24 aya kadar"],c:2,e:""},
+{q:"Doğum yapan memura, isteği üzerine, analık izni bitiminden itibaren en fazla ne kadar süreyle aylıksız izin verilir?",o:["6 aya kadar", "12 aya kadar", "18 aya kadar", "24 aya kadar"],c:3,e:""},
+{q:"Aylıksız izin süresinin bitiminden önce mazeretini gerektiren sebebin ortadan kalkması hâlinde, memur en geç kaç gün içinde görevine dönmek zorundadır?",o:["3 gün", "7 gün", "10 gün", "15 gün"],c:2,e:""},
+{q:"Mazeret sebebi ortadan kalkmasına rağmen 10 gün içinde görevine dönmeyen veya aylıksız izin süresi bitiminde görevine başlamayan memur hakkında ne işlem yapılır?",o:["Kınama cezası verilir", "Aylıktan kesme cezası uygulanır", "Görevden uzaklaştırılır", "Memuriyetten çekilmiş (istifa etmiş) sayılır"],c:3,e:""},
+{q:"657 sayılı Kanunun Mali Hükümlerine göre, memurların derece ve kademelerine göre alacakları aylık tutarını belirleyen rakama ne ad verilir?",o:["Katsayı", "Gösterge", "Ek gösterge", "Taban aylık"],c:1,e:""},
+{q:"Gösterge rakamlarının aylık tutarına çevrilmesinde uygulanan çarpan aşağıdakilerden hangisidir?",o:["Katsayı", "Endeks", "Yan ödeme", "Ek gösterge"],c:0,e:""},
+{q:"Devlet memurlarına ödenecek temel aylık tutarı nasıl hesaplanır?",o:["Gösterge rakamının katsayı ile çarpılmasıyla", "Brüt asgari ücretin dereceye bölünmesiyle", "Taban aylığa kıdem aylığı eklenmesiyle", "Sadece Cumhurbaşkanı kararnamesiyle belirlenen maktu tutarla"],c:0,e:""},
+{q:"Bir göreve ilk defa atanan Devlet memurlarının aylıkları hangi tarihten itibaren ödenmeye başlar?",o:["Kararnamenin onaylandığı tarihten itibaren", "İşe başladıkları günden itibaren", "İşe başladıkları tarihi takip eden aybaşından itibaren", "Atama emrinin tebliğ edildiği günden itibaren"],c:1,e:""},
+{q:"Aday memurlara atanacakları derecenin hangi kademesinin aylığı ödenir?",o:["Birinci kademe aylığı", "İkinci kademe aylığı", "Üçüncü kademe aylığı", "Kurumun takdir ettiği kademe aylığı"],c:0,e:""},
+{q:"Kademe ilerlemesi veya derece yükselmesi yapan bir memur, bu ilerlemeye veya yükselmeye hak kazandığı tarihi takip eden hangi zamandan itibaren yeni aylığına hak kazanır?",o:["Aynı gün", "15 gün sonra", "Takip eden aybaşından itibaren", "Takip eden yılbaşından itibaren"],c:2,e:""},
+{q:"Devlet memurlarının aylıkları kural olarak her ayın kaçında ödenir?",o:["Ayın 1'inde", "Ayın 5'inde", "Ayın 15'inde", "Ayın son gününde"],c:2,e:""},
+{q:"Memurların aylıkları ne şekilde ödenir?",o:["Çalışıldıktan sonra peşin olarak", "Ay başında peşin olarak (Ayın 15'inde peşin)", "Haftalık olarak", "Geriye dönük olarak ay sonunda"],c:1,e:""},
+{q:"Ölüm halinde, memura o ay için peşin ödenmiş olan aylıklar hakkında ne işlem yapılır?",o:["Kalan günlerin tutarı mirasçılarından geri alınır", "Geri alınmaz", "Yarısı hazineye irat kaydedilir", "Tamamı dul ve yetim aylığından kesilir"],c:1,e:""},
+{q:"Vekâlet görevi fiilen kaç ayı aştıktan sonra vekâlet aylığı ödenmeye başlanır?",o:["1 ayı", "2 ayı", "3 ayı", "6 ayı"],c:2,e:""},
+{q:"Evli bulunan Devlet memurlarına sosyal haklar kapsamında aşağıdakilerden hangisi ödenir?",o:["Lojman tazminatı", "Yıpranma payı", "Aile yardımı ödeneği", "Kıdem tazminatı"],c:2,e:""},
+{q:"Aile yardımı ödeneği, memurun her ne şekilde olursa olsun menfaat karşılığı çalışmayan ve sosyal güvenlik kuruluşlarından aylık almayan eşi için verilir mi?",o:["Hayır, sadece çocuklar için verilir.", "Sadece ilk 5 yıl verilir.", "Evet, verilir.", "Sadece memurun kendisi talep ederse yarım oranında verilir."],c:2,e:""},
+{q:"Memurun çocukları için verilen aile yardımı ödeneği kural olarak çocuk kaç yaşını doldurduğunda kesilir?",o:["18 yaşını doldurduğunda", "21 yaşını doldurduğunda", "25 yaşını doldurduğunda", "Yaş sınırı yoktur"],c:2,e:""},
+{q:"Yaş sınırına bakılmaksızın hangi çocuklar için aile yardımı ödeneği verilmeye devam edilir?",o:["Evlenmiş olan çocuklar", "Öğrenime devam etmeyen çocuklar", "Ticaretle uğraşan çocuklar", "Malullükleri (engelleri) resmi sağlık kurulu raporu ile belgelendirilen çocuklar"],c:3,e:""},
+{q:"Evlenen çocuklar için aile yardımı ödeneği ödenmeye devam eder mi?",o:["Yaşı 25'i geçmemişse devam eder.", "Öğrenimi devam ediyorsa ödenir.", "Evlenen çocuklar için aile yardımı ödeneği kesilir.", "Yarı oranında ödenmeye devam eder."],c:2,e:""},
+{q:"Eşlerden her ikisinin de memur olması halinde, çocuk için verilen aile yardımı ödeneği kimin aylığına eklenerek ödenir?",o:["Yalnızca birine (Kural olarak eşlerin kendi aralarındaki anlaşmaya veya kanuni önceliğe göre)", "Her ikisine de yarı yarıya ödenir.", "Her ikisine de tam olarak ödenir.", "Maaşı yüksek olana tam, düşük olana yarım ödenir."],c:0,e:""},
+{q:"Çocuğu dünyaya gelen Devlet memurlarına, sağ doğması şartıyla hangi ödenek verilir?",o:["Süt yardımı ödeneği", "Doğum yardımı ödeneği", "Analık tazminatı", "İlk adım ödeneği"],c:1,e:""},
+{q:"Doğum yardımı ödeneği, ana ve babanın her ikisinin de memur olması durumunda kime ödenir?",o:["Anaya", "Babaya", "Her ikisine yarı yarıya", "Kurum mutemedine"],c:1,e:""},
+{q:"Devlet memurlarından memur olmayan eşi ile aile yardımı ödeneğine müstehak çocuğu ölenlere, en yüksek Devlet memuru aylığı tutarında hangi ödenek verilir?",o:["Cenaze masrafı", "Defin tazminatı", "Ölüm yardımı ödeneği", "Dul ve yetim ödeneği"],c:2,e:""},
+{q:"Memurun kendisinin ölümü halinde, ölüm yardımı ödeneği kural olarak memurun sağlığında bildiri ile gösterdiği kimseye, göstermemiş ise öncelikle kimlere ödenir?",o:["Sadece anne ve babasına", "Hazineye kalır", "Eşine ve çocuklarına", "Kardeşlerine"],c:2,e:""},
+{q:"Memurun kendisinin ölümü halinde ödenecek ölüm yardımı ödeneği tutarı ne kadardır?",o:["En yüksek Devlet memuru aylığının bir katı", "En yüksek Devlet memuru aylığının iki katı", "Kendi brüt maaşının iki katı", "Asgari ücretin üç katı"],c:1,e:""},
+{q:"Yurt dışında vefat eden memurların cenazelerinin yurda getirilmesi için gerekli masraflar kim tarafından karşılanır?",o:["Ailesi tarafından", "Dışişleri Bakanlığı bütçesinden", "Kurumlarınca", "Sosyal Güvenlik Kurumu tarafından"],c:2,e:""},
+{q:"Kanun veya yönetmeliklerle belirlenen görevlerde çalışan memurlara, görevlerinin gereği olarak kurumlarınca hangi yardım yapılır?",o:["Kira yardımı", "Ulaşım yardımı", "Giyecek yardımı", "Kırtasiye yardımı"],c:2,e:""},
+{q:"Giyecek yardımının hangi memurlara ne şekilde verileceği hangi hukuki metin ile belirlenir?",o:["Kurum içi genelge", "Kanun teklifi", "Cumhurbaşkanı kararı", "İçişleri Bakanlığı talimatı"],c:2,e:""},
+{q:"Devlet memurlarının yemek ihtiyaçlarının bir kısmını karşılamak amacıyla kurum bütçelerinden yapılan yardıma ne ad verilir?",o:["Gıda yardımı", "Kumanya tahsisatı", "Yiyecek yardımı", "İaşe bedeli"],c:2,e:""},
+{q:"Memurların, kasıt, kusur, ihmal veya tedbirsizlikleri sonucu idareyi zarara uğratmaları halinde, bu zararın tutarı memurdan nasıl tahsil edilir?",o:["Disiplin cezası ile geçiştirilir", "Zarar, ilgili memura rayiç bedeli üzerinden ödettirilir", "Zararın sadece yarısı tahsil edilir", "Hazine tarafından karşılanır"],c:1,e:""},
+{q:"Memurların sürekli veya geçici görevle bir yere gönderilmeleri halinde, yol giderleri ve yevmiyeleri hangi kanun hükümlerine göre ödenir?",o:["Devlet Memurları Kanunu", "Borçlar Kanunu", "Harcırah Kanunu", "Kamu İhale Kanunu"],c:2,e:""},
+{q:"Kurumlar, günlük çalışma saatleri dışında personeli fazla çalışma ücreti vermeksizin çalıştırabilirler mi?",o:["Hiçbir surette çalıştıramazlar", "Gerektiği takdirde çalıştırabilirler", "Sadece memurun onayıyla çalıştırabilirler", "Sadece mülki idare amirinin izniyle çalıştırabilirler"],c:1,e:""},
+{q:"Günlük çalışma saatleri dışında fazla çalışma ücreti vermeksizin yaptırılacak fazla çalışmanın her kaç saati için memura bir gün izin verilir?",o:["4 saati için", "6 saati için", "8 saati için", "10 saati için"],c:2,e:""},
+{q:"Ücret ödenmeyen fazla çalışma karşılığında memura verilecek iznin en çok kaç günlük kısmı yıllık izinle birleştirilerek yılı içinde kullandırılabilir?",o:["5 günlük kısmı", "10 günlük kısmı", "15 günlük kısmı", "20 günlük kısmı"],c:1,e:""},
+{q:"Salgın hastalık, tabii afetler gibi olağanüstü hallerde yaptırılacak fazla çalışma için fazla çalışma ücreti ödenmesine kime veya hangi makama yetki verilmiştir?",o:["İlgili Bakanlığa", "Valiliklere", "Cumhurbaşkanına", "Türkiye Büyük Millet Meclisine"],c:2,e:""},
+{q:"Salgın hastalık ve tabii afetler gibi durumlarda Cumhurbaşkanı kararı ile yaptırılan fazla çalışmalar için memurlara ne ödenir?",o:["Harcırah", "Fazla çalışma ücreti", "Makam tazminatı", "Nöbet ücreti"],c:1,e:""},
+{q:"Devlet memurları, sosyal güvenlik yönünden hangi kanun hükümlerine tabidirler?",o:["İş Kanunu", "Borçlar Kanunu", "Türkiye Cumhuriyeti Emekli Sandığı (5510 Sayılı Kanun)", "Umumi Hıfzıssıhha Kanunu"],c:2,e:""},
+{q:"Devlet memurlarının emeklilik ve malullük hallerinde kendilerinin, ölümleri halinde ise dul ve yetimlerinin hakları hangi kurum tarafından sağlanır?",o:["Maliye Bakanlığı", "Sosyal Güvenlik Kurumu", "Aile ve Sosyal Hizmetler Bakanlığı", "Türkiye İş Kurumu"],c:1,e:""},
+{q:"Kurumlar, memurlarını lüzum gördükleri takdirde kendi hizmet alanlarında (kurum içinde) yönetmelikte belirlenen esaslara göre en fazla ne kadar süreyle geçici görevlendirebilirler?",o:["3 ay", "6 ay", "1 yıl", "Süresiz"],c:1,e:""},
+{q:"Kurumlar arası geçici süreli görevlendirmelerde memurun iradesi yönünden hangi şart aranır?",o:["Memurun muvafakati (rızası) aranır", "Memurun rızası aranmaz, amir takdiridir", "Sadece sendika onayı aranır", "Şart aranmaz, re'sen atanır"],c:0,e:""},
+{q:"Kurumlar arası geçici görevlendirme süresi, memurun bir yılında en fazla ne kadar olabilir?",o:["3 ay", "6 ay", "9 ay", "12 ay"],c:1,e:""},
+{q:"Geçici süreli görevlendirilen memurun, kendi asli kadrosu ile ilişiği hakkında hangi durum geçerlidir?",o:["Kadrosu iptal edilir", "Kadrosu dondurulur", "Kadrosu ile ilişiği devam eder", "Kadrosu geçici görev yaptığı yere aktarılır"],c:2,e:""},
+{q:"Kurum ve kuruluşlar, çalıştırdıkları memur kadrosunun yüzde kaçı oranında engelli personel çalıştırmak zorundadırlar?",o:["Yüzde 1", "Yüzde 2", "Yüzde 3", "Yüzde 5"],c:2,e:""},
+{q:"Yüzde 3 oranındaki engelli kotasının hesaplanmasında kurumların hangi teşkilatları dikkate alınmaz?",o:["Taşra teşkilatı", "Merkez teşkilatı", "Yurtdışı teşkilatı", "Döner sermaye işletmeleri"],c:2,e:""},
+{q:"Devlet memurları, kanun, tüzük ve yönetmeliklerin öngördüğü hangi kurallara uymak mecburiyetindedirler?",o:["Yalnızca mesai saatlerine", "Kılık ve kıyafet kurallarına", "Sadece iş güvenliği kurallarına", "Yalnızca hiyerarşik selamlaşma kurallarına"],c:1,e:""},
+{q:"Belirlenen kılık ve kıyafet hükümlerine aykırı davranmak, 657 sayılı Kanuna göre hangi disiplin cezasını gerektirir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:0,e:""},
+{q:"Memurlara, bulundukları unvan, hizmet sınıfı ve derecelerine göre ödenecek zam ve tazminatların oran ve miktarlarını belirlemeye kim yetkilidir?",o:["Türkiye Büyük Millet Meclisi", "Maliye Bakanı", "Cumhurbaşkanı", "Kurumun en üst amiri"],c:2,e:""},
+{q:"Özel hizmet tazminatı, makam tazminatı ve görev tazminatı gibi ödemeler hangi kapsama girer?",o:["Sosyal yardımlar", "Zam ve tazminatlar", "Harcırah ödemeleri", "İkramiyeler"],c:1,e:""},
+{q:"4/B maddesi kapsamında istihdam edilen sözleşmeli personelin, hizmet sözleşmesini kendi isteğiyle tek taraflı feshetmesi halinde yeniden kamu kurumlarında sözleşmeli istihdam edilebilmesi için kural olarak en az ne kadar süre beklemesi gerekir?",o:["6 ay", "1 yıl", "2 yıl", "3 yıl"],c:1,e:""},
+{q:"Sözleşmeli personelin 1 yıllık bekleme süresine tabi tutulmadan yeniden sözleşme yapabilmesini sağlayan mazeretlerden (istisnalardan) biri aşağıdakilerden hangisidir?",o:["Daha iyi şartlarda özel sektörde iş bulması", "Eş veya sağlık durumu mazereti nedeniyle yer değişikliği talebinde bulunmasına rağmen geçiş yapacağı birimde pozisyon bulunmaması", "Kurum amiriyle anlaşmazlık yaşaması", "Yıllık izninin tamamını kullanmamış olması"],c:1,e:""},
+{q:"Hizmet sözleşmesi doğum veya muvazzaf askerlik mazeretiyle feshedilen sözleşmeli personelin eski pozisyonlarına dönmeleri için mazeretin bitiminden itibaren kaç gün içinde kuruma başvurmaları gerekir?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"Özelleştirme uygulamaları nedeniyle kadro veya pozisyonları iptal edilen personelin diğer kamu kurumlarına atanması işlemi için kurumların hangi makama bildirim yapması esastır?",o:["Valiliğe", "İçişleri Bakanlığına", "Cumhurbaşkanlığına", "Türkiye İş Kurumuna"],c:2,e:""},
+{q:"Devlet memurlarına verilecek disiplin cezalarından hangisi, memura görevinde ve davranışlarında daha dikkatli olması gerektiğinin yazı ile bildirilmesidir?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Görevden uzaklaştırma"],c:0,e:""},
+{q:"Memura, görevinde ve davranışlarında kusurlu olduğunun yazı ile bildirilmesi hangi disiplin cezasıdır?",o:["Uyarma", "Kınama", "Aylıktan kesme", "Kademe ilerlemesinin durdurulması"],c:1,e:""},
+{q:"Aylıktan kesme cezası, memurun brüt aylığından hangi oranlar arasında kesinti yapılmasını ifade eder?",o:["1/10 ile 1/5", "1/30 ile 1/8", "1/20 ile 1/10", "1/8 ile 1/4"],c:1,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezası, fiilin ağırlık derecesine göre memurun kademe ilerlemesinin ne kadar süreyle durdurulmasını kapsar?",o:["6 aydan 1 yıla kadar", "1 yıldan 2 yıla kadar", "1 yıldan 3 yıla kadar", "2 yıldan 5 yıla kadar"],c:2,e:""},
+{q:"Bir daha Devlet memurluğuna atanmamak üzere memurluktan çıkarma cezası kim tarafından verilir?",o:["Disiplin Kurulu", "Yüksek Disiplin Kurulu", "Atamaya Yetkili Amir", "Vali"],c:1,e:""},
+{q:"Uyarma, kınama ve aylıktan kesme cezalarını vermeye yetkili makam aşağıdakilerden hangisidir?",o:["Disiplin amirleri", "Disiplin Kurulu", "Yüksek Disiplin Kurulu", "Mülki İdare Amiri"],c:0,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezasını vermeye kim yetkilidir?",o:["Disiplin amiri", "Memurun bağlı olduğu kurumdaki disiplin kurulunun kararı alındıktan sonra, atamaya yetkili amirler veya vali", "Yüksek Disiplin Kurulu", "Sadece Bakan"],c:1,e:""},
+{q:"Disiplin kurulları, kademe ilerlemesinin durdurulması cezası ile ilgili dosyayı aldıkları tarihten itibaren en çok kaç gün içinde karara bağlamak zorundadırlar?",o:["15 gün", "30 gün", "45 gün", "60 gün"],c:1,e:""},
+{q:"Yüksek Disiplin Kurulları kendilerine intikal eden Devlet memurluğundan çıkarma cezası teklifini, dosyayı aldıkları tarihten itibaren azami ne kadar süre içinde karara bağlarlar?",o:["1 ay", "3 ay", "6 ay", "1 yıl"],c:2,e:""},
+{q:"Uyarma, kınama, aylıktan kesme ve kademe ilerlemesinin durdurulması cezalarını gerektiren fiil ve halleri öğrenen disiplin amiri, fiilin öğrenildiği tarihten itibaren en geç ne kadar süre içinde disiplin soruşturmasına başlamak zorundadır?",o:["15 gün", "1 ay", "3 ay", "6 ay"],c:1,e:""},
+{q:"Memurluktan çıkarma cezasını gerektiren fiil ve hallerde, disiplin amirleri fiili öğrendikleri tarihten itibaren en geç ne kadar süre içinde disiplin soruşturmasına başlamalıdır?",o:["1 ay", "3 ay", "6 ay", "1 yıl"],c:2,e:""},
+{q:"Disiplin cezasını gerektiren fiil ve hallerin işlendiği tarihten itibaren nihayet ne kadar süre içinde disiplin cezası verilmezse ceza verme yetkisi tamamen zamanaşımına uğrar?",o:["1 yıl", "2 yıl", "3 yıl", "5 yıl"],c:1,e:""},
+{q:"Disiplin amirleri uyarma, kınama ve aylıktan kesme cezalarını soruşturmanın tamamlandığı günden itibaren en geç kaç gün içinde vermek zorundadırlar?",o:["7 gün", "15 gün", "30 gün", "60 gün"],c:1,e:""},
+{q:"Memura savunma hakkı tanınmadan disiplin cezası verilebilir mi?",o:["Amir takdiriyle verilebilir.", "Sadece uyarma cezası verilebilir.", "Hayır, verilemez.", "Soruşturma gizli ise verilebilir."],c:2,e:""},
+{q:"Disiplin soruşturmasında memurdan savunma istenirken verilen savunma süresi en az kaç gün olmalıdır?",o:["3 gün", "5 gün", "7 gün", "15 gün"],c:2,e:""},
+{q:"Memur, kendisine verilen en az 7 günlük süre içinde savunmasını yapmazsa hukuki sonuç ne olur?",o:["Soruşturma iptal edilir", "Görevden uzaklaştırılır", "Savunma hakkından vazgeçmiş sayılır", "Ek süre verilir"],c:2,e:""},
+{q:"Disiplin cezaları kural olarak hangi tarihten itibaren hüküm ifade eder ve uygulanır?",o:["Karar tarihinde", "Kesinleştiği tarihte", "Kararı izleyen aybaşında", "Tebliğ edildiği tarihte"],c:3,e:""},
+{q:"Aylıktan kesme cezası, cezanın veriliş tarihini takip eden hangi tarihte uygulanır?",o:["Aynı gün", "15 gün sonra", "Takip eden aybaşında", "Yıl sonunda"],c:2,e:""},
+{q:"Disiplin amirleri tarafından verilen uyarma, kınama ve aylıktan kesme cezalarına karşı nereye itiraz edilebilir?",o:["Disiplin Kuruluna", "Yüksek Disiplin Kuruluna", "İdare Mahkemesine", "İlgili Bakanlığa"],c:0,e:""},
+{q:"Kademe ilerlemesinin durdurulması cezasına karşı nereye itiraz edilebilir?",o:["Disiplin Kuruluna", "Yüksek Disiplin Kuruluna", "Valiliğe", "Danıştaya"],c:1,e:""},
+{q:"Disiplin cezalarına karşı itiraz süresi, kararın ilgiliye tebliği tarihinden itibaren kaç gündür?",o:["7 gün", "10 gün", "15 gün", "30 gün"],c:0,e:""},
+{q:"Uyarma ve kınama cezalarının uygulanmasından itibaren kaç yıl geçtikten sonra memur atamaya yetkili amire başvurarak bu cezaların özlük dosyasından silinmesini isteyebilir?",o:["1 yıl", "3 yıl", "5 yıl", "10 yıl"],c:2,e:""},
+{q:"Aylıktan kesme ve kademe ilerlemesinin durdurulması cezalarının uygulanmasından itibaren kaç yıl geçtikten sonra memur bu cezaların özlük dosyasından silinmesini isteyebilir?",o:["3 yıl", "5 yıl", "10 yıl", "15 yıl"],c:2,e:""},
+{q:"Aşağıdakilerden hangisi görevden uzaklaştırma tedbirini almaya yetkili makamlardan biri değildir?",o:["Atamaya yetkili amirler", "Şube müdürleri", "Bakanlık ve genel müdürlük müfettişleri", "İllerde valiler, ilçelerde kaymakamlar"],c:1,e:""},
+{q:"Görevden uzaklaştırılan veya görevinden uzak kalan memurlara bu süre içinde aylıklarının ne kadarı ödenir?",o:["Tamamı", "Yarısı", "Üçte ikisi", "Dörtte biri"],c:2,e:""},
+{q:"Disiplin kovuşturması nedeniyle görevden uzaklaştırılan memurun durumu, yetkililerce en çok hangi aralıklarla incelenerek göreve dönüp dönmemesi hakkında bir karar verilir?",o:["Her ay", "İki ayda bir", "Üç ayda bir", "Altı ayda bir"],c:1,e:""}
+];
+
+  document.getElementById("mainTitle").textContent = `${BASE_SUBJECT} Deneme Sınavı`;
+  document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+  document.getElementById("sourceTag").textContent = SOURCE_TEXT;
+  document.title = `${BASE_SUBJECT} Deneme Sınavı`;
+
+  if (performance.navigation.type === performance.navigation.TYPE_RELOAD || !sessionStorage.getItem("session_active")) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+    sessionStorage.setItem("session_active", "true");
+  }
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let solvedIndex = -1;
+  let userAnswers = {};
+  let currentSetKey = "";
+  let stats = { correct: 0, wrong: 0 };
+  let wrongQuestionsMode = false;
+
+  function storagePrefix() {
+    return "exam_" + CURRENT_SUBJECT.replace(/\s+/g, "_") + "_";
+  }
+
+  function setStateKey(index) {
+    return storagePrefix() + "state_set_" + index;
+  }
+
+  function wrongQuestionsKey() {
+    return storagePrefix() + "wrong_questions_pool";
+  }
+
+  function getWrongQuestionsPool() {
+    return JSON.parse(localStorage.getItem(wrongQuestionsKey()) || "[]");
+  }
+
+  function saveWrongQuestionsPool(pool) {
+    localStorage.setItem(wrongQuestionsKey(), JSON.stringify(pool));
+  }
+
+  function addWrongQuestionToPool(question) {
+    const pool = getWrongQuestionsPool();
+
+    const exists = pool.some(item =>
+      item.q === question.q &&
+      JSON.stringify(item.o) === JSON.stringify(question.o)
+    );
+
+    if (!exists) {
+      pool.push({
+        q: question.q,
+        o: [...question.o],
+        c: question.c,
+        e: question.e || ""
+      });
+      saveWrongQuestionsPool(pool);
+    }
+  }
+
+  function normalizeQuestion(q, originalIndex) {
+    return {
+      id: q.id || ("q_" + originalIndex + "_" + Math.random().toString(36).slice(2, 8)),
+      originalNo: originalIndex + 1,
+      q: q.q,
+      o: [...q.o],
+      c: q.c,
+      e: q.e || "",
+      isRetry: q.isRetry || false,
+      retryFrom: q.retryFrom || null,
+      retryCount: q.retryCount || 0,
+      answeredCorrectly: q.answeredCorrectly || false
+    };
+  }
+
+  function initMenu() {
+    const menuGrid = document.getElementById("menuGrid");
+    menuGrid.innerHTML = "";
+
+    const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
+
+    let setsPerButton = 1;
+    let buttonCount = totalSets;
+
+    if (buttonCount > 10) {
+      setsPerButton = 2;
+      buttonCount = Math.ceil(totalSets / setsPerButton);
+    }
+
+    buttonCount = Math.min(buttonCount, 10);
+
+    for (let i = 0; i < buttonCount; i++) {
+      const startSetNo = i * setsPerButton + 1;
+      const endSetNo = Math.min(startSetNo + setsPerButton - 1, totalSets);
+
+      const start = (startSetNo - 1) * QUESTIONS_PER_SET;
+      const end = Math.min(endSetNo * QUESTIONS_PER_SET, questions.length);
+
+      if (start >= questions.length) continue;
+
+      const key = setStateKey(i);
+
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const solved = saved ? Object.keys(saved.userAnswers || {}).length : 0;
+      const correct = saved?.stats?.correct || 0;
+      const wrong = saved?.stats?.wrong || 0;
+
+      const totalCurrent = saved?.currentQuestions?.length || (end - start);
+      const isCompleted = saved ? (solved >= totalCurrent && totalCurrent > 0) : false;
+
+      const label = startSetNo === endSetNo
+        ? `Deneme-${startSetNo} (${BASE_SUBJECT})`
+        : `Deneme-${startSetNo}-${endSetNo} (${BASE_SUBJECT})`;
+
+      const btn = document.createElement("button");
+      btn.className = `menu-btn ${isCompleted ? "locked" : ""}`;
+      btn.innerHTML = `
+        <strong>${label}</strong><br>
+        <small>${end - start} Soru | Çözülen ${solved} (Doğru ${correct} Yanlış ${wrong})</small>
+      `;
+
+      if (!isCompleted) {
+        btn.onclick = () => startSet(i, key, start, end);
+      }
+
+      menuGrid.appendChild(btn);
+    }
+
+    const wrongPool = getWrongQuestionsPool();
+
+    if (wrongPool.length > 0) {
+      const wrongBtn = document.createElement("button");
+      wrongBtn.className = "wrong-menu-btn";
+      wrongBtn.innerHTML = `
+        <strong>Yanlış Yapılan Sorular</strong><br>
+        <small>${wrongPool.length} Soru | Yeniden çöz</small>
+      `;
+      wrongBtn.onclick = openWrongQuestions;
+      menuGrid.appendChild(wrongBtn);
+    }
+  }
+
+  function openWrongQuestions() {
+    const pool = getWrongQuestionsPool();
+    if (!pool.length) return;
+
+    wrongQuestionsMode = true;
+    currentSetKey = storagePrefix() + "wrong_questions_state";
+
+    const saved = JSON.parse(localStorage.getItem(currentSetKey) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = pool.map((q, i) => ({
+        id: "wrong_" + i + "_" + Math.random().toString(36).slice(2, 8),
+        originalNo: i + 1,
+        q: q.q,
+        o: [...q.o],
+        c: q.c,
+        e: q.e || "",
+        isRetry: false,
+        retryFrom: null,
+        retryCount: 0,
+        answeredCorrectly: false
+      }));
+
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = "Yanlış Yapılan Sorular";
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function startSet(idx, key, start, end) {
+    wrongQuestionsMode = false;
+    currentSetKey = key;
+
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = questions.slice(start, end).map((q, i) => normalizeQuestion(q, start + i));
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function getQuestionTitle(q) {
+    const cleanQ = String(q.q || "").replace(/^\s*Soru-\d+\s*:\s*/i, "");
+    return `Soru-${q.originalNo} : ${cleanQ}`;
+  }
+
+  function loadQuestion() {
+    const q = currentQuestions[currentIndex];
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
+    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("footerLeft").textContent = `Kalan: ${Math.max(currentQuestions.length - (currentIndex + 1), 0)}`;
+    document.getElementById("footerRight").textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+    document.getElementById("questionText").textContent = getQuestionTitle(q);
+
+    const retryBadge = document.getElementById("retryBadge");
+    retryBadge.style.display = q.isRetry ? "block" : "none";
+
+    const optArea = document.getElementById("optionsArea");
+    const expArea = document.getElementById("explanationArea");
+    optArea.innerHTML = "";
+    expArea.style.display = "none";
+    expArea.innerHTML = "";
+
+    const letters = ["A", "B", "C", "D", "E"];
+
+    q.o.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<strong>${letters[idx]})</strong> ${opt}`;
+
+      if (currentIndex <= solvedIndex) {
+        btn.disabled = true;
+        const userChoice = userAnswers[currentIndex];
+
+        if (idx === userChoice) {
+          if (userChoice === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          } else {
+            btn.classList.add("wrong");
+          }
+        }
+
+        if (wrongQuestionsMode) {
+          if (idx === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          }
+          expArea.innerHTML = `<strong>Açıklama:</strong> ${String(q.e || "").replace(/^\s*Açıklama\s*:\s*/i, "")}`;
+          expArea.style.display = "block";
+        } else {
+          if (userChoice === q.c) {
+            expArea.innerHTML = `<strong>Açıklama:</strong> ${String(q.e || "").replace(/^\s*Açıklama\s*:\s*/i, "")}`;
+            expArea.style.display = "block";
+          } else if (q.isRetry) {
+            if (idx === q.c) {
+              btn.classList.add("correct");
+              btn.innerHTML += ` <span class="tick show">✔</span>`;
+            }
+            expArea.innerHTML = `<strong>Açıklama:</strong> ${String(q.e || "").replace(/^\s*Açıklama\s*:\s*/i, "")}`;
+            expArea.style.display = "block";
+          }
+        }
+      } else {
+        btn.onclick = () => selectOption(idx);
+      }
+
+      optArea.appendChild(btn);
+    });
+
+    document.getElementById("prevBtn").style.visibility = currentIndex > 0 ? "visible" : "hidden";
+    document.getElementById("nextBtn").style.visibility = currentIndex <= solvedIndex ? "visible" : "hidden";
+  }
+
+  function selectOption(idx) {
+    const q = currentQuestions[currentIndex];
+    const isCorrect = idx === q.c;
+
+    userAnswers[currentIndex] = idx;
+    solvedIndex = Math.max(solvedIndex, currentIndex);
+
+    if (isCorrect) {
+      stats.correct++;
+      q.answeredCorrectly = true;
+    } else {
+      stats.wrong++;
+
+      if (wrongQuestionsMode) {
+        // Yanlış Yapılan Sorular modunda soru yeniden eklenmez.
+      } else {
+        addWrongQuestionToPool(q);
+
+        if (!q.isRetry) {
+          const retryQuestion = {
+            ...q,
+            isRetry: true,
+            retryFrom: q.originalNo,
+            retryCount: 1
+          };
+
+          const insertIndex = Math.min(currentIndex + 5, currentQuestions.length);
+          currentQuestions.splice(insertIndex, 0, retryQuestion);
+        }
+      }
+    }
+
+    saveState();
+    loadQuestion();
+  }
+
+  function saveState() {
+    localStorage.setItem(currentSetKey, JSON.stringify({
+      currentQuestions,
+      currentIndex,
+      solvedIndex,
+      userAnswers,
+      stats
+    }));
+  }
+
+  function goForward() {
+    if (currentIndex < solvedIndex) {
+      currentIndex = solvedIndex + 1;
+    } else if (currentIndex < currentQuestions.length - 1) {
+      currentIndex++;
+    } else {
+      return showMenu();
+    }
+
+    saveState();
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      saveState();
+      loadQuestion();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showMenu() {
+    wrongQuestionsMode = false;
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("menuContainer").style.display = "block";
+    initMenu();
+    window.scrollTo(0, 0);
+  }
+
+  function clearAllStatistics() {
+    if (confirm("Tüm veriler sıfırlansın mı?")) {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+      });
+      initMenu();
+    }
+  }
+
+  function resetCurrentSet() {
+    if (confirm("Bu deneme sıfırlansın mı?")) {
+      localStorage.removeItem(currentSetKey);
+      showMenu();
+    }
+  }
+
+  initMenu();
+</script>
+
+<script>
+function shuffleAllQuestions() {
+  if (!confirm("Tüm sorular ve şıkları karıştırılsın mı?")) return;
+
+  questions.forEach(q => {
+    const correct = q.o[q.c];
+    for (let i = q.o.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [q.o[i], q.o[j]] = [q.o[j], q.o[i]];
+    }
+    q.c = q.o.findIndex(x => x === correct);
+  });
+
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]];
+  }
+
+  if (typeof storagePrefix === "function") {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+  }
+
+  alert("Sorular karıştırıldı!");
+  if (typeof initMenu === "function") initMenu();
+}
+</script>
+
+</body>
+</html>
